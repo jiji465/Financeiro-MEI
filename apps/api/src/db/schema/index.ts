@@ -1,5 +1,6 @@
-// Índice do schema Drizzle. Ninguém edita este arquivo após o Phase 0; P1-B preenche cada arquivo.
+// Índice do schema Drizzle. Ninguém edita este arquivo após o Phase 1 (P1-B acrescentou enums.ts).
 // (_common.ts exporta apenas helpers e por isso não entra no objeto de schema.)
+export * from './enums.js';
 export * from './tenants.js';
 export * from './auth.js';
 export * from './parametros.js';

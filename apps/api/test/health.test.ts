@@ -2,11 +2,13 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { buildTestApp, type TestApp } from './helpers.js';
 
-describe('GET /api/v1/health', () => {
+describe('GET /api/v1/health e infraestrutura', () => {
   let ctx: TestApp;
 
   beforeAll(async () => {
-    ctx = await buildTestApp();
+    // SWAGGER ligado só aqui: garante que todos os schemas zod (inclusive z.stringbool das
+    // query strings do shared) são conversíveis para OpenAPI.
+    ctx = await buildTestApp({ SWAGGER: 'true' });
   });
 
   afterAll(async () => {
@@ -25,11 +27,42 @@ describe('GET /api/v1/health', () => {
     expect(res.json()).toMatchObject({ error: { code: 'NOT_FOUND' } });
   });
 
-  it('rota de módulo protegido ainda sem rotas devolve o envelope de erro', async () => {
+  it('rota de módulo protegido sem Bearer devolve 401 (ou 404 se o módulo ainda é stub)', async () => {
     const res = await ctx.app.inject({ method: 'GET', url: '/api/v1/dashboard/qualquer' });
-    // Módulos são stubs no Phase 0: cai no not-found handler (404). Quando P1-B/WP5 registrarem
-    // rotas, o hook onRequest [app.authenticate] passa a responder 401 sem Bearer.
     expect([401, 404]).toContain(res.statusCode);
     expect(res.json()).toHaveProperty('error.code');
+    const protegida = await ctx.app.inject({ method: 'GET', url: '/api/v1/categorias' });
+    expect(protegida.statusCode).toBe(401);
+  });
+
+  it('corpo JSON inválido devolve 400 no envelope', async () => {
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      headers: { 'content-type': 'application/json' },
+      payload: '{ "email": ',
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({ error: { code: 'VALIDATION_ERROR' } });
+  });
+
+  it('gera o OpenAPI em /docs/json com as rotas dos módulos', async () => {
+    const res = await ctx.app.inject({ method: 'GET', url: '/docs/json' });
+    expect(res.statusCode).toBe(200);
+    const doc = res.json<{ openapi: string; paths: Record<string, unknown> }>();
+    expect(doc.openapi).toMatch(/^3\./);
+    expect(Object.keys(doc.paths)).toEqual(
+      expect.arrayContaining([
+        '/api/v1/health',
+        '/api/v1/auth/signup',
+        '/api/v1/auth/refresh',
+        '/api/v1/auth/me/senha',
+        '/api/v1/categorias',
+        '/api/v1/categorias/{id}',
+        '/api/v1/configuracoes',
+      ]),
+    );
+    // Rotas de coleção registradas como '' (sem barra final duplicada na documentação)
+    expect(Object.keys(doc.paths)).not.toContain('/api/v1/categorias/');
   });
 });

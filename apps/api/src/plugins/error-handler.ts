@@ -1,5 +1,6 @@
 // Converte qualquer erro no envelope { error: { code, message, details? } } (seção 4 do plano).
-// AppError → status próprio; zod (validação de rota) → VALIDATION_ERROR 400; demais → códigos por status.
+// AppError → status próprio; zod (validação de rota) → VALIDATION_ERROR 400; erros do Postgres
+// (unique/FK/check) → 409/422; demais → códigos por status. Nunca expõe stack ou SQL ao cliente.
 import { ERROR_STATUS, type ErrorCode, type ErrorDetail } from '@meifin/shared';
 import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
@@ -33,6 +34,26 @@ const MENSAGEM_POR_CODIGO: Record<ErrorCode, string> = {
   PAYLOAD_TOO_LARGE: 'Arquivo ou corpo da requisição grande demais',
   INTERNAL_ERROR: 'Erro interno do servidor',
 };
+
+/** Erros do Postgres (pg e PGlite expõem `code` SQLSTATE; o Drizzle 0.45 embrulha em `cause`). */
+const ERRO_PG: Record<string, { code: ErrorCode; message: string }> = {
+  '23505': { code: 'CONFLICT', message: 'Já existe um registro com esses dados' },
+  '23503': { code: 'UNPROCESSABLE', message: 'Registro relacionado não encontrado' },
+  '23514': { code: 'UNPROCESSABLE', message: 'Valor não permitido pelas regras do banco' },
+  '23502': { code: 'UNPROCESSABLE', message: 'Campo obrigatório ausente' },
+  '22P02': { code: 'VALIDATION_ERROR', message: 'Formato de valor inválido' },
+  '22001': { code: 'VALIDATION_ERROR', message: 'Valor longo demais' },
+  '22003': { code: 'VALIDATION_ERROR', message: 'Valor numérico fora do intervalo permitido' },
+};
+
+export function codigoPg(erro: unknown, profundidade = 0): string | undefined {
+  if (!erro || typeof erro !== 'object' || profundidade > 5) return undefined;
+  const e = erro as { code?: unknown; cause?: unknown };
+  if (typeof e.code === 'string' && /^[0-9A-Z]{5}$/.test(e.code) && e.code in ERRO_PG) {
+    return e.code;
+  }
+  return codigoPg(e.cause, profundidade + 1);
+}
 
 function enviar(
   reply: FastifyReply,
@@ -75,6 +96,13 @@ export const errorHandlerPlugin = fp(
       if (isResponseSerializationError(error)) {
         request.log.error({ err: error }, 'Resposta não corresponde ao schema');
         return enviar(reply, 'INTERNAL_ERROR', MENSAGEM_POR_CODIGO.INTERNAL_ERROR);
+      }
+
+      const sqlstate = codigoPg(error);
+      if (sqlstate) {
+        const mapeado = ERRO_PG[sqlstate]!;
+        request.log.warn({ err: error, sqlstate }, 'Erro de integridade do banco');
+        return enviar(reply, mapeado.code, mapeado.message);
       }
 
       const status = error.statusCode ?? 500;

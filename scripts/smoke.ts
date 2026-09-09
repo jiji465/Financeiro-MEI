@@ -6,6 +6,7 @@ import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../apps/api/src/app.js';
 import { loadEnv } from '../apps/api/src/config/env.js';
 import { createDb, type Database, MEMORY_DATA_DIR } from '../apps/api/src/db/index.js';
+import { runSeeds } from '../apps/api/src/db/seed/index.js';
 
 export interface SmokeContext {
   app: FastifyInstance;
@@ -35,7 +36,86 @@ export const PASSOS: Passo[] = [
       esperar(typeof corpo.versao === 'string' && corpo.versao.length > 0, 'versao ausente');
     },
   },
-  // P1-B: 1. signup/login/me  2. categorias padrão
+  {
+    nome: '1. POST /auth/signup → POST /auth/login → GET /auth/me',
+    async run({ app, estado }) {
+      const email = `smoke-${Date.now()}@meifin.test`;
+      const senha = 'Smoke@12345';
+      const signup = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/signup',
+        payload: { nome: 'MEI Smoke', email, senha, atividade: 'comercio_servicos' },
+      });
+      esperar(
+        signup.statusCode === 201,
+        `signup: esperado 201, recebido ${signup.statusCode}: ${signup.body}`,
+      );
+      const corpo = signup.json<{
+        accessToken: string;
+        tenant: { id: string };
+        user: { id: string };
+      }>();
+      esperar(typeof corpo.accessToken === 'string', 'signup sem accessToken');
+      const cookie = (signup.cookies as Array<{ name: string; value: string }>).find(
+        (c) => c.name === 'refresh_token',
+      );
+      esperar(!!cookie?.value, 'signup sem cookie refresh_token');
+
+      const login = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/login',
+        payload: { email, senha },
+      });
+      esperar(login.statusCode === 200, `login: esperado 200, recebido ${login.statusCode}`);
+      const accessToken = login.json<{ accessToken: string }>().accessToken;
+
+      const me = await app.inject({
+        method: 'GET',
+        url: '/api/v1/auth/me',
+        headers: { authorization: `Bearer ${accessToken}` },
+      });
+      esperar(me.statusCode === 200, `me: esperado 200, recebido ${me.statusCode}`);
+      const dados = me.json<{ data: { user: { email: string }; tenant: { id: string } } }>().data;
+      esperar(dados.user.email === email, 'me devolveu outro usuário');
+      esperar(dados.tenant.id === corpo.tenant.id, 'me devolveu outro tenant');
+
+      estado.accessToken = accessToken;
+      estado.tenantId = corpo.tenant.id;
+      estado.userId = corpo.user.id;
+      estado.headers = { authorization: `Bearer ${accessToken}` };
+    },
+  },
+  {
+    nome: '2. GET /categorias devolve as categorias padrão (≥ 10, com "Impostos e DAS")',
+    async run({ app, estado }) {
+      const headers = estado.headers as Record<string, string>;
+      const res = await app.inject({ method: 'GET', url: '/api/v1/categorias', headers });
+      esperar(res.statusCode === 200, `categorias: esperado 200, recebido ${res.statusCode}`);
+      const { data } = res.json<{
+        data: Array<{ id: string; nome: string; tipo: string; sistema: boolean }>;
+      }>();
+      esperar(data.length >= 10, `esperado ≥ 10 categorias, recebido ${data.length}`);
+      const das = data.find((c) => c.sistema);
+      esperar(
+        !!das && das.nome === 'Impostos e DAS',
+        'categoria de sistema "Impostos e DAS" ausente',
+      );
+      esperar(
+        data.some((c) => c.tipo === 'receita'),
+        'nenhuma categoria de receita',
+      );
+      esperar(
+        data.some((c) => c.tipo === 'despesa'),
+        'nenhuma categoria de despesa',
+      );
+
+      const sem = await app.inject({ method: 'GET', url: '/api/v1/categorias' });
+      esperar(sem.statusCode === 401, `sem token: esperado 401, recebido ${sem.statusCode}`);
+
+      estado.categoriaReceitaId = data.find((c) => c.tipo === 'receita')!.id;
+      estado.categoriaDasId = das!.id;
+    },
+  },
   // WP2: 3. lançamentos + importação CSV   WP4: 4. DAS pago gera despesa
   // WP5: 5. dashboard 6. relatórios (PDF começa com %PDF, CSV com BOM e ";")
   // Phase 3: 7. isolamento entre dois tenants
@@ -53,6 +133,7 @@ async function main() {
   });
   const database = await createDb(env);
   await database.migrate();
+  await runSeeds(database.db);
   const app = await buildApp({ env, db: database, logger: false });
   await app.ready();
   const ctx: SmokeContext = { app, database, estado: {} };

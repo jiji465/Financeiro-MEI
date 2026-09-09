@@ -1,7 +1,8 @@
-// Preenchido por P1-B (API core): rotas em routes.ts, regras em service.ts, acesso a dados em repository.ts.
-// O plugin recebe a instância já com o type provider zod; use app.db / app.env / request.tenantId.
+// Módulo configuracoes: rotas em routes.ts, regras em service.ts, acesso a dados em repository.ts.
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 
-export const configuracoesModule: FastifyPluginAsyncZod = async (_app) => {
-  // stub do Phase 0
+import { configuracoesRoutes } from './routes.js';
+
+export const configuracoesModule: FastifyPluginAsyncZod = async (app) => {
+  await app.register(configuracoesRoutes);
 };

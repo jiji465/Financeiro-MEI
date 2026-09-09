@@ -14,6 +14,9 @@ import { z } from 'zod';
 import type { Env } from './config/env.js';
 import { apiVersion } from './config/paths.js';
 import type { Database } from './db/index.js';
+import { hoje as hojePadrao, type HojeFn } from './lib/hoje.js';
+import { ConsoleMailer, type Mailer } from './lib/mailer.js';
+import { criarStorage, type FileStorage } from './lib/storage.js';
 import { modules } from './modules/registry.js';
 import { authPlugin } from './plugins/auth.js';
 import { dbPlugin } from './plugins/db.js';
@@ -28,6 +31,14 @@ export interface BuildAppOptions {
   db: Database;
   /** Sobrescreve o logger (testes usam false). Padrão: pino com nível env.LOG_LEVEL. */
   logger?: FastifyServerOptions['logger'];
+  /** Relógio de negócio injetável (testes). Padrão: hoje em America/Sao_Paulo. */
+  hoje?: HojeFn;
+  /** Mailer injetável (testes usam MemoryMailer). Padrão: ConsoleMailer (loga no pino). */
+  mailer?: Mailer;
+  /** Storage de anexos injetável. Padrão: disco local ao lado da pasta do PGlite. */
+  storage?: FileStorage;
+  /** Liga o rate limit (padrão: true, exceto NODE_ENV=test). */
+  rateLimit?: boolean;
 }
 
 export const healthResponse = z.object({
@@ -51,7 +62,15 @@ function criarLogger(env: Env): FastifyServerOptions['logger'] {
   return { level: env.LOG_LEVEL };
 }
 
-export async function buildApp({ env, db, logger }: BuildAppOptions): Promise<FastifyInstance> {
+export async function buildApp({
+  env,
+  db,
+  logger,
+  hoje,
+  mailer,
+  storage,
+  rateLimit,
+}: BuildAppOptions): Promise<FastifyInstance> {
   const app = Fastify({
     logger: logger ?? criarLogger(env),
     trustProxy: env.IS_PRODUCTION,
@@ -62,9 +81,13 @@ export async function buildApp({ env, db, logger }: BuildAppOptions): Promise<Fa
   app.setSerializerCompiler(serializerCompiler);
 
   app.decorate('env', env);
+  app.decorate('hoje', hoje ?? hojePadrao);
+  app.decorate('mailer', mailer ?? new ConsoleMailer(app.log));
+  app.decorate('storage', storage ?? criarStorage(db.dataDir));
+
   await app.register(dbPlugin, { database: db });
   await app.register(errorHandlerPlugin);
-  await app.register(securityPlugin, { env });
+  await app.register(securityPlugin, { env, rateLimit: rateLimit ?? !env.IS_TEST });
   await app.register(authPlugin, { env });
   await app.register(multipartPlugin);
   if (env.SWAGGER) await app.register(swaggerPlugin, { env });
