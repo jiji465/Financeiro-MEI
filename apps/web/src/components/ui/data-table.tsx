@@ -211,7 +211,13 @@ export function DataTable<T>({
               >
                 <div className="min-w-0 flex-1">{mobileCard(row, index)}</div>
                 {rowActions ? (
-                  <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                  // flex-col evita que duas ou mais ações lado a lado estourem a largura do
+                  // cartão mobile (o irmão flex-1/min-w-0 encolhe para acomodar); empilhar é
+                  // seguro mesmo com uma única ação (ex.: um DropdownMenu). Ver docs/handoff/WP4.md.
+                  <div
+                    className="flex shrink-0 flex-col items-end gap-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {rowActions(row)}
                   </div>
                 ) : null}

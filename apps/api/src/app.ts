@@ -83,7 +83,7 @@ export async function buildApp({
   app.decorate('env', env);
   app.decorate('hoje', hoje ?? hojePadrao);
   app.decorate('mailer', mailer ?? new ConsoleMailer(app.log));
-  app.decorate('storage', storage ?? criarStorage(db.dataDir));
+  app.decorate('storage', storage ?? criarStorage(env));
 
   await app.register(dbPlugin, { database: db });
   await app.register(errorHandlerPlugin);

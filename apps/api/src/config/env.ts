@@ -60,6 +60,16 @@ const envBruto = z.object({
   WEB_DIST_DIR: z.string().min(1).optional(),
   SWAGGER: z.stringbool().optional(),
   TZ_BUSINESS: z.string().min(1).default('America/Sao_Paulo'),
+  // Armazenamento de anexos: 'local' (disco, padrão em dev) ou 's3' (compatível S3, ex.:
+  // Supabase Storage — necessário em produção quando o disco do servidor é efêmero, como no
+  // plano gratuito do Render).
+  STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
+  S3_ENDPOINT: z.string().min(1).optional(),
+  S3_REGION: z.string().min(1).default('auto'),
+  S3_BUCKET: z.string().min(1).optional(),
+  S3_ACCESS_KEY_ID: z.string().min(1).optional(),
+  S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+  S3_FORCE_PATH_STYLE: z.stringbool().default(true),
 });
 
 export const envSchema = envBruto
@@ -106,6 +116,23 @@ export const envSchema = envBruto
         path: ['JWT_REFRESH_SECRET'],
         message: 'JWT_REFRESH_SECRET deve ser diferente de JWT_ACCESS_SECRET',
       });
+    }
+  })
+  .superRefine((env, ctx) => {
+    if (env.STORAGE_DRIVER !== 's3') return;
+    for (const chave of [
+      'S3_ENDPOINT',
+      'S3_BUCKET',
+      'S3_ACCESS_KEY_ID',
+      'S3_SECRET_ACCESS_KEY',
+    ] as const) {
+      if (!env[chave]) {
+        ctx.addIssue({
+          code: 'custom',
+          path: [chave],
+          message: `${chave} é obrigatória quando STORAGE_DRIVER=s3`,
+        });
+      }
     }
   });
 
