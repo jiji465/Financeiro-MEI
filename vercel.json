@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm install --frozen-lockfile && pnpm --filter @meifin/shared build && pnpm --filter @meifin/web build && rm -rf dist && cp -r apps/web/dist dist",
+  "buildCommand": "pnpm install --frozen-lockfile && pnpm --filter @meifin/shared build && WEB_BUILD_OUT_DIR=../../dist pnpm --filter @meifin/web build",
   "installCommand": "pnpm install --frozen-lockfile",
   "outputDirectory": "dist",
   "framework": null,

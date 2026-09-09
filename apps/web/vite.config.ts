@@ -23,7 +23,14 @@ export default defineConfig({
     },
   },
   preview: { host: '127.0.0.1', port: 4173, strictPort: true },
-  build: { outDir: 'dist', emptyOutDir: true, sourcemap: false },
+  // WEB_BUILD_OUT_DIR permite redirecionar o build para outra pasta (ex.: a Vercel espera o
+  // resultado em "dist" na raiz do repositório, não em apps/web/dist). Sem a variável, o padrão
+  // continua apps/web/dist — usado localmente e pelo deploy single-service (SERVE_WEB=true).
+  build: {
+    outDir: process.env.WEB_BUILD_OUT_DIR ?? 'dist',
+    emptyOutDir: true,
+    sourcemap: false,
+  },
   test: {
     name: 'web',
     environment: 'happy-dom',
