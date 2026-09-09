@@ -18,6 +18,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 
 import { forTenant } from '../../lib/tenant-db.js';
+import { gerarRecorrenciasPendentes } from '../lancamentos/index.js';
 import * as service from './service.js';
 
 const TAGS = ['dashboard'];
@@ -50,6 +51,17 @@ export const contatoQuery = refinarPeriodo(
 );
 
 export const dashboardRoutes: FastifyPluginAsyncZod = async (app) => {
+  // Integração Phase 3: materializa recorrências pendentes antes de qualquer leitura do
+  // dashboard, para que lançamentos recorrentes do mês corrente apareçam mesmo que o usuário
+  // nunca abra a tela de recorrências. Nunca deve quebrar o dashboard: falha vira apenas log.
+  app.addHook('onRequest', async (request) => {
+    try {
+      await gerarRecorrenciasPendentes(app.db, request.tenantId, app.hoje());
+    } catch (erro) {
+      request.log.warn({ erro }, 'Falha ao materializar recorrências pendentes antes do dashboard');
+    }
+  });
+
   app.get(
     '/resumo',
     {
