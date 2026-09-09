@@ -25,10 +25,10 @@ alterar-senha-form}.tsx`; liguei os dois `index.ts` (rotas lazy + nav); e escrev
    "obrigatório mas aceita `null` como valor inicial do form".
 3. **Mobile: ações da tabela de DAS colidiam no cartão mobile.** `DataTable` (P1-C) renderiza
    `rowActions` tanto na última coluna da tabela desktop quanto ao lado do cartão mobile (`<div
-   className="shrink-0">`, sem quebra de linha automática) — meu `acoes()` tinha dois botões lado
+className="shrink-0">`, sem quebra de linha automática) — meu `acoes()` tinha dois botões lado
    a lado (`flex-wrap items-center justify-end`) que, no cartão mobile (largura ~140px), ficavam
    sobre o FAB e o conteúdo do cartão. Troquei para `flex-col items-stretch gap-1 md:flex-row
-   md:items-center md:justify-end` (empilha <768px, linha ≥768px). Confirmado por medição de
+md:items-center md:justify-end` (empilha <768px, linha ≥768px). Confirmado por medição de
    `getBoundingClientRect()` (sem sobreposição) — screenshots do navegador neste ambiente tiveram
    um bug de composição (tiles duplicados) que não refletia o DOM real.
    **Atenção para outras features que usam `DataTable` com `mobileCard` + `rowActions` com mais de
@@ -49,8 +49,8 @@ alterar-senha-form}.tsx`; liguei os dois `index.ts` (rotas lazy + nav); e escrev
    `export { LimiteCard, ... } from './components/limite-card'` em `features/das/index.ts`) —
    confirmado funcionando: o dashboard do WP5 já os importa e renderiza (`Limite anual 2026` e a
    lista de alertas críticos aparecem na Home). `LimiteCardProps = { ano?: number; compacto?:
-   boolean; className?: string }`; `AlertasListProps = { maxItens?; compacto?; tipos?: readonly
-   string[]; titulo?; className? }`.
+boolean; className?: string }`; `AlertasListProps = { maxItens?; compacto?; tipos?: readonly
+string[]; titulo?; className? }`.
 3. **`categoriaDasId` em Preferências**: expus um `Select` com as categorias de despesa para
    trocar a categoria usada nos pagamentos de DAS (o backend já suportava, só não tinha UI).
 4. Não criei seletor de ano-base independente na aba DASN além do já feito (`?anoBase=`,
@@ -62,7 +62,7 @@ alterar-senha-form}.tsx`; liguei os dois `index.ts` (rotas lazy + nav); e escrev
 
 - `pnpm --filter @meifin/shared build`
 - `pnpm --filter @meifin/api exec vitest run src/modules/obrigacoes test/isolation.test.ts
-  test/static-guard.test.ts` — 113 testes verdes (105 do módulo + isolamento/guarda cobrindo mais
+test/static-guard.test.ts` — 113 testes verdes (105 do módulo + isolamento/guarda cobrindo mais
   recursos de outros WPs entrando em paralelo).
 - `pnpm --filter @meifin/web exec vitest run src/features/das src/features/configuracoes` — 12
   testes verdes (15 contando um 4º arquivo de `features/dashboard` capturado pelo filtro por

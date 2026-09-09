@@ -1,6 +1,7 @@
 # Notas para a Phase 3 (integração)
 
 ## Risco verificado: FK composta com ON DELETE SET NULL
+
 O WP2 encontrou e corrigiu um bug real: no Postgres, `SET NULL` em uma foreign key
 composta `(tenant_id, x_id)` zera **todas** as colunas da FK ao apagar a linha
 referenciada — inclusive `tenant_id`, que é `NOT NULL` em `lancamentos`. Isso quebrava
@@ -18,6 +19,7 @@ composta com `onDelete: 'set null'`, aplicar o mesmo padrão de desvincular expl
 antes de apagar.
 
 ## Risco a revisar: DataTable com rowActions no mobileCard
+
 WP4 encontrou (e contornou localmente, sem tocar no componente) uma colisão visual: quando
 `rowActions` tem mais de um botão, no `mobileCard` do `DataTable` (`apps/web/src/components/ui`)
 os botões ficam lado a lado sem quebra automática (`shrink-0` sem wrap), podendo sobrepor
