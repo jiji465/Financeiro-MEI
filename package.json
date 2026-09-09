@@ -1,0 +1,51 @@
+{
+  "name": "meifin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MEI Financeiro — sistema financeiro SaaS para Microempreendedores Individuais",
+  "type": "module",
+  "packageManager": "pnpm@10.18.0",
+  "engines": {
+    "node": ">=22.12 <23",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @meifin/shared build && concurrently -k -n shared,api,web -c cyan,green,magenta \"pnpm --filter @meifin/shared dev\" \"pnpm --filter @meifin/api dev\" \"pnpm --filter @meifin/web dev\"",
+    "build": "pnpm -r build",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "smoke": "pnpm --filter @meifin/shared build && tsx scripts/smoke.ts",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm smoke",
+    "db:generate": "pnpm --filter @meifin/api db:generate",
+    "db:migrate": "pnpm --filter @meifin/api db:migrate",
+    "db:push": "pnpm --filter @meifin/api db:push",
+    "db:seed": "pnpm --filter @meifin/api db:seed",
+    "db:seed:demo": "pnpm --filter @meifin/api db:seed:demo",
+    "db:reset": "pnpm --filter @meifin/api db:reset",
+    "db:backup": "pnpm --filter @meifin/api db:backup",
+    "env:check": "tsx scripts/check-env.ts",
+    "clean": "tsx scripts/clean.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@types/node": "22.20.1",
+    "@vitest/coverage-v8": "4.1.11",
+    "concurrently": "10.0.5",
+    "cross-env": "10.1.0",
+    "eslint": "9.39.5",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.5.6",
+    "prettier": "3.9.6",
+    "tsx": "4.23.13",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.70.0",
+    "vite": "7.3.6",
+    "vitest": "4.1.11"
+  }
+}

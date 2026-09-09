@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "../node_modules/.tsc/scripts",
+    "emitDeclarationOnly": true,
+    "tsBuildInfoFile": "../node_modules/.tsc/scripts.tsbuildinfo",
+    "types": ["node"]
+  },
+  "include": ["*.ts"],
+  "references": [{ "path": "../apps/api" }, { "path": "../packages/shared" }]
+}

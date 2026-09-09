@@ -1,0 +1,57 @@
+{
+  "name": "@meifin/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Constantes, schemas zod e regras de domínio compartilhadas entre API e web",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./constants": {
+      "types": "./dist/constants.d.ts",
+      "default": "./dist/constants.js"
+    },
+    "./money": {
+      "types": "./dist/money.d.ts",
+      "default": "./dist/money.js"
+    },
+    "./dates": {
+      "types": "./dist/dates.d.ts",
+      "default": "./dist/dates.js"
+    },
+    "./csv": {
+      "types": "./dist/csv.d.ts",
+      "default": "./dist/csv.js"
+    },
+    "./schemas": {
+      "types": "./dist/schemas/index.d.ts",
+      "default": "./dist/schemas/index.js"
+    },
+    "./domain": {
+      "types": "./dist/domain/index.d.ts",
+      "default": "./dist/domain/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsc -b --watch --preserveWatchOutput",
+    "typecheck": "tsc -b",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@date-fns/tz": "1.5.0",
+    "date-fns": "4.4.0",
+    "papaparse": "5.7.0",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@types/papaparse": "5.5.2",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11"
+  }
+}

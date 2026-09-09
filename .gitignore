@@ -1,0 +1,32 @@
+# Dependências
+node_modules/
+
+# Builds e artefatos
+dist/
+coverage/
+*.tsbuildinfo
+.vite/
+
+# Dados locais (PGlite, uploads, backups)
+.data/
+
+# Variáveis de ambiente (mantenha apenas o .env.example)
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Windows / OneDrive
+desktop.ini
+Thumbs.db
+~$*
+
+# IDEs
+.idea/
+.vscode/*
+!.vscode/extensions.json
