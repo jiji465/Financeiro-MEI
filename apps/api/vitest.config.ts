@@ -10,6 +10,8 @@ export default defineConfig({
     setupFiles: ['./test/setup.ts'],
     pool: 'forks',
     maxWorkers: 3,
+    // Com maxWorkers diferente dos outros projetos, o Vitest exige um groupOrder único.
+    sequence: { groupOrder: 1 },
     testTimeout: 60_000,
     hookTimeout: 120_000,
   },
