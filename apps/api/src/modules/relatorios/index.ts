@@ -1,7 +1,9 @@
-// Preenchido por WP5 (Dashboard + Relatórios): rotas em routes.ts, regras em service.ts, acesso a dados em repository.ts.
-// O plugin recebe a instância já com o type provider zod; use app.db / app.env / request.tenantId.
+// Módulo relatorios (WP5): rotas em routes.ts, regras em service.ts, consultas em repository.ts,
+// exportação CSV/PDF em exportar.ts. Somente leitura.
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 
-export const relatoriosModule: FastifyPluginAsyncZod = async (_app) => {
-  // stub do Phase 0
+import { relatoriosRoutes } from './routes.js';
+
+export const relatoriosModule: FastifyPluginAsyncZod = async (app) => {
+  await app.register(relatoriosRoutes);
 };

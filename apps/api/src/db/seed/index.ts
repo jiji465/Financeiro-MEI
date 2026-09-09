@@ -1,5 +1,5 @@
 // Seeds idempotentes. runSeeds(db) roda no boot (main.ts) e em `pnpm db:seed`;
-// `pnpm db:seed:demo` (--demo) fica para WP5/Phase 3 (db/seed/demo.ts).
+// `pnpm db:seed:demo` (--demo) roda também o seed de demonstração (db/seed/demo.ts).
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -37,7 +37,23 @@ if (executadoComoScript()) {
     console.log(
       `Seed de parâmetros MEI: ${resultado.parametrosMeiInseridos} ano(s) inserido(s) (${database.kind}).`,
     );
-    if (demo) console.log('Seed demo: implementado na Phase 3 (db/seed/demo.ts).');
+    if (demo) {
+      const { DEMO_EMAIL, DEMO_SENHA, seedDemo } = await import('./demo.js');
+      const resultadoDemo = await seedDemo(database);
+      if (!resultadoDemo.criado) {
+        console.log(`Seed demo: usuário ${DEMO_EMAIL} já existia, nada foi criado.`);
+      } else {
+        const c = resultadoDemo.contadores!;
+        console.log(
+          [
+            `Seed demo criado: ${DEMO_EMAIL} / ${DEMO_SENHA}`,
+            `  clientes: ${c.clientes}, fornecedores: ${c.fornecedores}`,
+            `  lançamentos: ${c.lancamentos}, notas fiscais: ${c.notasFiscais}`,
+            `  títulos: ${c.titulos} (${c.parcelas} parcelas), DAS pagos: ${c.dasPagos}`,
+          ].join('\n'),
+        );
+      }
+    }
   } finally {
     await database.close();
   }
