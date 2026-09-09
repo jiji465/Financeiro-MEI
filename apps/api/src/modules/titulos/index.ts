@@ -1,7 +1,10 @@
-// Preenchido por WP3 (Contas + Notas): rotas em routes.ts, regras em service.ts, acesso a dados em repository.ts.
-// O plugin recebe a instância já com o type provider zod; use app.db / app.env / request.tenantId.
+// Módulo titulos (contas a pagar/receber + parcelas). Registrado com prefixo '' no registry:
+// as rotas declaram os caminhos completos /titulos… e /parcelas…
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 
-export const titulosModule: FastifyPluginAsyncZod = async (_app) => {
-  // stub do Phase 0
+import { parcelasRoutes, titulosRoutes } from './routes.js';
+
+export const titulosModule: FastifyPluginAsyncZod = async (app) => {
+  await app.register(titulosRoutes);
+  await app.register(parcelasRoutes);
 };

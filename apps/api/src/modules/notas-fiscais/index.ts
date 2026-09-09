@@ -1,7 +1,12 @@
-// Preenchido por WP3 (Contas + Notas): rotas em routes.ts, regras em service.ts, acesso a dados em repository.ts.
-// O plugin recebe a instância já com o type provider zod; use app.db / app.env / request.tenantId.
+// Módulo notas-fiscais: rotas em routes.ts, regras em service.ts, acesso a dados em repository.ts,
+// provedores de emissão (manual hoje; SEFAZ no futuro) em providers/.
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 
-export const notasFiscaisModule: FastifyPluginAsyncZod = async (_app) => {
-  // stub do Phase 0
+import { notasFiscaisRoutes } from './routes.js';
+
+export const notasFiscaisModule: FastifyPluginAsyncZod = async (app) => {
+  await app.register(notasFiscaisRoutes);
 };
+
+export type { NfeProvider } from './providers/index.js';
+export { ManualProvider, obterProvider } from './providers/index.js';
