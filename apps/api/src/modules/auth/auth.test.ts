@@ -7,6 +7,7 @@ import {
   type TenantSession,
   type TestApp,
 } from '../../../test/helpers.js';
+import * as authRepo from './repository.js';
 
 const BASE = '/api/v1/auth';
 
@@ -21,150 +22,30 @@ describe('auth', () => {
     await ctx.close();
   });
 
-  describe('POST /signup', () => {
-    it('cria tenant, usuário, configurações e categorias padrão; devolve token e cookie', async () => {
-      const res = await ctx.app.inject({
-        method: 'POST',
-        url: `${BASE}/signup`,
-        payload: {
-          nome: 'Maria Serviços',
-          email: 'Maria@Exemplo.com',
-          senha: 'Senha@12345',
-          cnpj: '12.345.678/0001-95',
-          atividade: 'servicos',
-          dataAbertura: '2025-03-01',
-        },
-      });
-      expect(res.statusCode).toBe(201);
-      const corpo = res.json();
-      expect(corpo.accessToken).toEqual(expect.any(String));
-      expect(corpo.user).toMatchObject({
-        nome: 'Maria Serviços',
-        email: 'maria@exemplo.com',
-        role: 'owner',
-      });
-      expect(corpo.tenant).toMatchObject({
-        nome: 'Maria Serviços',
-        cnpj: '12345678000195',
-        atividade: 'servicos',
-        caminhoneiroTributos: null,
-        dataAbertura: '2025-03-01',
-      });
-
-      const cookie = (res.cookies as Array<Record<string, unknown>>).find(
-        (c) => c.name === 'refresh_token',
-      );
-      expect(cookie).toMatchObject({ httpOnly: true, path: '/api/v1/auth', sameSite: 'Lax' });
-      expect(String(cookie?.value).length).toBeGreaterThan(30);
-
-      const headers = { authorization: `Bearer ${corpo.accessToken}` };
-      const cats = await ctx.app.inject({ method: 'GET', url: '/api/v1/categorias', headers });
-      expect(cats.statusCode).toBe(200);
-      const lista = cats.json<{ data: Array<{ nome: string; sistema: boolean; tipo: string }> }>()
-        .data;
-      expect(lista.length).toBeGreaterThanOrEqual(10);
-      const das = lista.find((c) => c.sistema);
-      expect(das).toMatchObject({ nome: 'Impostos e DAS', tipo: 'despesa' });
-      expect(lista.some((c) => c.nome === 'Prestação de serviços')).toBe(true);
-      expect(lista.some((c) => c.nome === 'Venda de produtos')).toBe(false);
-
-      const cfg = await ctx.app.inject({ method: 'GET', url: '/api/v1/configuracoes', headers });
-      expect(cfg.statusCode).toBe(200);
-      expect(cfg.json().data.categoriaDasId).toBeTruthy();
+  // POST /signup foi removido: cadastro deixou de ser self-service (seção 11 do plano). A
+  // criação de conta de verdade agora é POST /admin/contas (só admin) — testada em
+  // modules/admin/admin.test.ts. Aqui só confirmamos que a rota pública realmente sumiu.
+  it('POST /signup não existe mais publicamente', async () => {
+    const res = await ctx.app.inject({
+      method: 'POST',
+      url: `${BASE}/signup`,
+      payload: { nome: 'X', email: 'x@exemplo.com', senha: 'Senha@12345', atividade: 'servicos' },
     });
-
-    it('rejeita e-mail duplicado (case-insensitive) com 409 e campo email', async () => {
-      const res = await ctx.app.inject({
-        method: 'POST',
-        url: `${BASE}/signup`,
-        payload: {
-          nome: 'Outra',
-          email: 'MARIA@exemplo.com',
-          senha: 'Senha@12345',
-          atividade: 'comercio',
-        },
-      });
-      expect(res.statusCode).toBe(409);
-      expect(res.json()).toMatchObject({
-        error: { code: 'CONFLICT', details: [{ campo: 'email' }] },
-      });
-    });
-
-    it('rejeita CNPJ duplicado com 409 e campo cnpj', async () => {
-      const res = await ctx.app.inject({
-        method: 'POST',
-        url: `${BASE}/signup`,
-        payload: {
-          nome: 'Outra',
-          email: 'outra@exemplo.com',
-          senha: 'Senha@12345',
-          cnpj: '12345678000195',
-          atividade: 'comercio',
-        },
-      });
-      expect(res.statusCode).toBe(409);
-      expect(res.json()).toMatchObject({
-        error: { code: 'CONFLICT', details: [{ campo: 'cnpj' }] },
-      });
-    });
-
-    it('valida o corpo (senha curta, e-mail inválido, caminhoneiro sem tributos)', async () => {
-      const res = await ctx.app.inject({
-        method: 'POST',
-        url: `${BASE}/signup`,
-        payload: { nome: 'X', email: 'nao-e-email', senha: '123', atividade: 'caminhoneiro' },
-      });
-      expect(res.statusCode).toBe(400);
-      const corpo = res.json<{ error: { code: string; details: Array<{ campo: string }> } }>();
-      expect(corpo.error.code).toBe('VALIDATION_ERROR');
-      const campos = corpo.error.details.map((d) => d.campo);
-      expect(campos).toEqual(
-        expect.arrayContaining(['nome', 'email', 'senha', 'caminhoneiroTributos']),
-      );
-    });
-
-    it('CNPJ com dígitos verificadores errados → 400 no campo cnpj', async () => {
-      const res = await ctx.app.inject({
-        method: 'POST',
-        url: `${BASE}/signup`,
-        payload: {
-          nome: 'CNPJ Ruim',
-          email: 'cnpj-ruim@exemplo.com',
-          senha: 'Senha@12345',
-          cnpj: '12.345.678/0001-00',
-          atividade: 'comercio',
-        },
-      });
-      expect(res.statusCode).toBe(400);
-      expect(res.json()).toMatchObject({
-        error: { code: 'VALIDATION_ERROR', details: [{ campo: 'cnpj' }] },
-      });
-    });
-
-    it('caminhoneiro com tributos recebe categorias próprias', async () => {
-      const s = await signupTenant(ctx.app, {
-        atividade: 'caminhoneiro',
-        caminhoneiroTributos: 'ambos',
-      });
-      expect(s.tenant.atividade).toBe('caminhoneiro');
-      const cats = await ctx.app.inject({
-        method: 'GET',
-        url: '/api/v1/categorias',
-        headers: s.headers,
-      });
-      const nomes = cats.json<{ data: Array<{ nome: string }> }>().data.map((c) => c.nome);
-      expect(nomes).toContain('Fretes e transporte');
-      expect(nomes).toContain('Pedágios');
-      expect(nomes).not.toContain('Transporte e deslocamento');
-    });
+    expect(res.statusCode).toBe(404);
   });
 
   describe('POST /login', () => {
+    let maria: TenantSession;
+
+    beforeAll(async () => {
+      maria = await signupTenant(ctx.app, { nome: 'Maria Serviços', email: 'maria@exemplo.com' });
+    });
+
     it('entra com e-mail (qualquer caixa) e senha corretos', async () => {
       const res = await ctx.app.inject({
         method: 'POST',
         url: `${BASE}/login`,
-        payload: { email: 'maria@EXEMPLO.com', senha: 'Senha@12345' },
+        payload: { email: 'MARIA@Exemplo.com', senha: maria.senha },
       });
       expect(res.statusCode).toBe(200);
       expect(res.json().user.email).toBe('maria@exemplo.com');
@@ -190,6 +71,17 @@ describe('auth', () => {
       });
       expect(res.statusCode).toBe(401);
       expect(res.json().error.message).toBe('E-mail ou senha inválidos');
+    });
+
+    it('conta suspensa (ativo=false) → 401', async () => {
+      const s = await signupTenant(ctx.app);
+      await authRepo.atualizarUser(ctx.database.db, s.userId, { ativo: false });
+      const res = await ctx.app.inject({
+        method: 'POST',
+        url: `${BASE}/login`,
+        payload: { email: s.email, senha: s.senha },
+      });
+      expect(res.statusCode).toBe(401);
     });
   });
 

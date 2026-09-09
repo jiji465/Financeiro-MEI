@@ -1,10 +1,17 @@
 // Aplica apps/api/drizzle em um PGlite memory:// limpo e confere tabelas, enums e idempotência.
+import { readdirSync } from 'node:fs';
 import { type SQL, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { loadEnv } from '../src/config/env.js';
+import { migrationsDir } from '../src/config/paths.js';
 import { createDb, type Database, MEMORY_DATA_DIR } from '../src/db/index.js';
 import { TEST_ENV } from './helpers.js';
+
+/** Um arquivo .sql = uma migração aplicada; conta os arquivos em vez de fixar um número. */
+function totalMigracoes(): number {
+  return readdirSync(migrationsDir()).filter((f) => f.endsWith('.sql')).length;
+}
 
 const TABELAS_ESPERADAS = [
   'alertas_dispensados',
@@ -21,6 +28,7 @@ const TABELAS_ESPERADAS = [
   'password_reset_tokens',
   'recorrencias',
   'refresh_tokens',
+  'solicitacoes_acesso',
   'tenants',
   'titulos',
   'users',
@@ -37,6 +45,7 @@ const ENUMS_ESPERADOS = [
   'status_lancamento',
   'status_nota',
   'status_parcela',
+  'status_solicitacao',
   'status_titulo',
   'tipo_contato',
   'tipo_lancamento',
@@ -120,6 +129,6 @@ describe('migrações (0000_init)', () => {
       database,
       sql`select count(*)::int as n from drizzle.__drizzle_migrations`,
     );
-    expect(res[0]?.n).toBe(1);
+    expect(res[0]?.n).toBe(totalMigracoes());
   });
 });

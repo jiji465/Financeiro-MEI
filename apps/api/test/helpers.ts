@@ -9,6 +9,7 @@ import { runSeeds } from '../src/db/seed/index.js';
 import type { HojeFn } from '../src/lib/hoje.js';
 import { MemoryMailer } from '../src/lib/mailer.js';
 import { LocalDiskStorage } from '../src/lib/storage.js';
+import { criarAuthService } from '../src/modules/auth/service.js';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -96,7 +97,7 @@ export interface TenantSession {
   cookies: Record<string, string>;
   /** Cabeçalhos prontos para app.inject: Authorization: Bearer ... */
   headers: { authorization: string };
-  user: { id: string; tenantId: string; nome: string; email: string; role: string };
+  user: { id: string; tenantId: string; nome: string; email: string; role: string; admin: boolean };
   tenant: { id: string; nome: string; atividade: string };
 }
 
@@ -109,7 +110,13 @@ export function cookiesDe(res: LightMyRequestResponse): Record<string, string> {
   return saida;
 }
 
-/** Cria um tenant + usuário via POST /auth/signup e devolve token, ids e cookies. */
+/**
+ * Cria um tenant + usuário chamando service.signup(...) diretamente (sem HTTP): desde que o
+ * cadastro deixou de ser self-service (seção 11 do plano), POST /auth/signup não existe mais
+ * publicamente. Em seguida faz um POST /auth/login de verdade só para obter um cookie
+ * refresh_token real (login continua público) — `cookies`/`headers` ficam idênticos ao que um
+ * signup HTTP devolvia antes.
+ */
 export async function signupTenant(
   app: FastifyInstance,
   overrides: SignupOverrides = {},
@@ -128,11 +135,23 @@ export async function signupTenant(
       : {}),
     ...(overrides.dataAbertura ? { dataAbertura: overrides.dataAbertura } : {}),
   };
-  const res = await app.inject({ method: 'POST', url: '/api/v1/auth/signup', payload });
-  if (res.statusCode !== 201) {
-    throw new Error(`signupTenant falhou (${res.statusCode}): ${res.body}`);
+  const service = criarAuthService({
+    database: app.database,
+    env: app.env,
+    mailer: app.mailer,
+    sign: (p) => app.jwt.sign(p),
+  });
+  await service.signup(payload, {});
+
+  const login = await app.inject({
+    method: 'POST',
+    url: '/api/v1/auth/login',
+    payload: { email, senha },
+  });
+  if (login.statusCode !== 200) {
+    throw new Error(`signupTenant: login pós-cadastro falhou (${login.statusCode}): ${login.body}`);
   }
-  const corpo = res.json<{
+  const corpo = login.json<{
     accessToken: string;
     user: TenantSession['user'];
     tenant: TenantSession['tenant'];
@@ -143,10 +162,36 @@ export async function signupTenant(
     userId: corpo.user.id,
     email,
     senha,
-    cookies: cookiesDe(res),
+    cookies: cookiesDe(login),
     headers: { authorization: `Bearer ${corpo.accessToken}` },
     user: corpo.user,
     tenant: corpo.tenant,
+  };
+}
+
+/**
+ * signupTenant + promove a admin=true direto no banco + login de novo (o token precisa ser
+ * reemitido para carregar o claim `admin` atualizado). Usado pelos testes do painel /admin.
+ */
+export async function signupAdmin(
+  app: FastifyInstance,
+  database: Database,
+  overrides: SignupOverrides = {},
+): Promise<TenantSession> {
+  const s = await signupTenant(app, overrides);
+  const authRepo = await import('../src/modules/auth/repository.js');
+  await authRepo.atualizarUser(database.db, s.userId, { admin: true });
+  const login = await app.inject({
+    method: 'POST',
+    url: '/api/v1/auth/login',
+    payload: { email: s.email, senha: s.senha },
+  });
+  const corpo = login.json<{ accessToken: string }>();
+  return {
+    ...s,
+    accessToken: corpo.accessToken,
+    headers: { authorization: `Bearer ${corpo.accessToken}` },
+    user: { ...s.user, admin: true },
   };
 }
 

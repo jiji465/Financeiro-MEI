@@ -18,6 +18,8 @@ declare module 'fastify' {
     database: Database;
     /** onRequest hook: verifica o Bearer e preenche request.user / request.tenantId. */
     authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    /** onRequest hook: exige request.user.admin (usar sempre depois de authenticate). */
+    requireAdmin: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
     /** "Hoje" de negócio (America/Sao_Paulo); testes injetam relógio fixo. */
     hoje: HojeFn;
     /** Envio de e-mail (console em dev; memória nos testes). */

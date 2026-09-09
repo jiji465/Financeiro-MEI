@@ -17,6 +17,7 @@ export function criarUser(sobrescrever: Partial<AuthUser> = {}): AuthUser {
     nome: 'Maria da Silva',
     email: 'maria@exemplo.com.br',
     role: 'owner',
+    admin: false,
     ...sobrescrever,
   };
 }

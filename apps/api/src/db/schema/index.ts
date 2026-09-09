@@ -11,3 +11,4 @@ export * from './titulos.js';
 export * from './notas-fiscais.js';
 export * from './obrigacoes.js';
 export * from './importacoes.js';
+export * from './solicitacoes.js';

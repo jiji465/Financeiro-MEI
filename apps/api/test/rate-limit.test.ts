@@ -18,6 +18,8 @@ describe('rate limit em rotas de auth', () => {
   });
 
   it('bloqueia a 11ª tentativa de login em 15 minutos', async () => {
+    // signupTenant() já fez 1 login de verdade (para obter um refresh_token real) — conta como a
+    // 1ª tentativa desta janela. Faltam 9 tentativas válidas até estourar o limite de 10.
     let ultimo = 0;
     for (let i = 0; i < 11; i++) {
       const res = await ctx.app.inject({
@@ -26,7 +28,7 @@ describe('rate limit em rotas de auth', () => {
         payload: { email: sessao.email, senha: 'errada-errada' },
       });
       ultimo = res.statusCode;
-      if (i < 10) expect(res.statusCode).toBe(401);
+      if (i < 9) expect(res.statusCode).toBe(401);
     }
     expect(ultimo).toBe(429);
   });

@@ -1,6 +1,7 @@
 import { LogOut, PanelLeft } from 'lucide-react';
 import { NavLink } from 'react-router';
 
+import { navItems } from '@/app/registry';
 import { useLogout } from '@/features/auth/hooks';
 import { useAuthStore } from '@/features/auth/store';
 import { iniciais } from '@/lib/format/texto';
@@ -8,7 +9,7 @@ import { cn } from '@/lib/utils/cn';
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { BrandMark } from './brand';
-import { agruparNav } from './nav';
+import { agruparNav, filtrarPorAdmin } from './nav';
 
 export interface SidebarProps {
   collapsed: boolean;
@@ -20,7 +21,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const user = useAuthStore((s) => s.user);
   const tenant = useAuthStore((s) => s.tenant);
   const logout = useLogout();
-  const grupos = agruparNav();
+  const admin = useAuthStore((s) => s.user?.admin ?? false);
+  const grupos = agruparNav(filtrarPorAdmin(navItems, admin));
 
   return (
     <aside

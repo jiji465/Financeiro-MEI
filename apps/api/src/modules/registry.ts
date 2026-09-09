@@ -6,6 +6,7 @@
 // requiresAuth: true → onRequest: [app.authenticate] no contexto encapsulado do módulo.
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 
+import { adminModule } from './admin/index.js';
 import { authModule } from './auth/index.js';
 import { categoriasModule } from './categorias/index.js';
 import { configuracoesModule } from './configuracoes/index.js';
@@ -16,6 +17,7 @@ import { lancamentosModule } from './lancamentos/index.js';
 import { notasFiscaisModule } from './notas-fiscais/index.js';
 import { obrigacoesModule } from './obrigacoes/index.js';
 import { relatoriosModule } from './relatorios/index.js';
+import { solicitacoesModule } from './solicitacoes/index.js';
 import { titulosModule } from './titulos/index.js';
 
 export interface ModuleDefinition {
@@ -23,6 +25,8 @@ export interface ModuleDefinition {
   prefix: string;
   plugin: FastifyPluginAsyncZod;
   requiresAuth: boolean;
+  /** Exige request.user.admin, além de requiresAuth (app.ts: onRequest requireAdmin). */
+  requiresAdmin?: boolean;
 }
 
 export const modules: readonly ModuleDefinition[] = [
@@ -47,4 +51,17 @@ export const modules: readonly ModuleDefinition[] = [
   { name: 'obrigacoes', prefix: '/obrigacoes', plugin: obrigacoesModule, requiresAuth: true },
   { name: 'dashboard', prefix: '/dashboard', plugin: dashboardModule, requiresAuth: true },
   { name: 'relatorios', prefix: '/relatorios', plugin: relatoriosModule, requiresAuth: true },
+  {
+    name: 'solicitacoes',
+    prefix: '',
+    plugin: solicitacoesModule,
+    requiresAuth: false,
+  },
+  {
+    name: 'admin',
+    prefix: '/admin',
+    plugin: adminModule,
+    requiresAuth: true,
+    requiresAdmin: true,
+  },
 ];

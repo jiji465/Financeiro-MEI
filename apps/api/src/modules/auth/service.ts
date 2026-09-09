@@ -53,7 +53,14 @@ export interface SessaoEmitida {
 const MENSAGEM_CREDENCIAIS = 'E-mail ou senha inválidos';
 
 export function toAuthUser(u: UserRow): AuthUser {
-  return { id: u.id, tenantId: u.tenantId, nome: u.nome, email: u.email, role: u.role };
+  return {
+    id: u.id,
+    tenantId: u.tenantId,
+    nome: u.nome,
+    email: u.email,
+    role: u.role,
+    admin: u.admin,
+  };
 }
 
 export function toAuthTenant(t: TenantRow): AuthTenant {
@@ -82,6 +89,7 @@ export function criarAuthService(deps: AuthDeps) {
       tenantId: user.tenantId,
       role: user.role,
       email: user.email,
+      admin: user.admin,
     });
     const refreshToken = gerarToken();
     await repo.inserirRefreshToken(exec, {
@@ -94,7 +102,7 @@ export function criarAuthService(deps: AuthDeps) {
     return { accessToken, refreshToken };
   }
 
-  async function signup(input: SignupBody, meta: SessaoMeta) {
+  async function signup(input: SignupBody, meta: SessaoMeta, opcoes: { admin?: boolean } = {}) {
     if (await repo.buscarUserPorEmail(db, input.email)) {
       throw new ConflictError('E-mail já cadastrado', [
         { campo: 'email', mensagem: 'E-mail já cadastrado' },
@@ -129,6 +137,7 @@ export function criarAuthService(deps: AuthDeps) {
         email: input.email,
         senhaHash,
         role: 'owner',
+        admin: opcoes.admin ?? false,
         ultimoLoginAt: new Date().toISOString(),
       });
       const criadas = await aplicarCategoriasPadrao(tx, tenant.id, input.atividade);

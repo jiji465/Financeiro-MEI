@@ -2,12 +2,13 @@ import { Ellipsis, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router';
 
+import { navItems } from '@/app/registry';
 import { useLogout } from '@/features/auth/hooks';
 import { useAuthStore } from '@/features/auth/store';
 import { cn } from '@/lib/utils/cn';
 
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../ui/sheet';
-import { bottomNavSlots, itensMais, rotaAtiva } from './nav';
+import { bottomNavSlots, filtrarPorAdmin, itensMais, rotaAtiva } from './nav';
 
 const itemClass =
   'flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium text-zinc-500 transition-colors [&_svg]:size-5';
@@ -17,9 +18,10 @@ const ativoClass = 'text-primary-700';
 export function BottomNav() {
   const [maisAberto, setMaisAberto] = useState(false);
   const { pathname } = useLocation();
-  const slots = bottomNavSlots();
-  const restantes = itensMais();
   const user = useAuthStore((s) => s.user);
+  const itensVisiveis = filtrarPorAdmin(navItems, user?.admin ?? false);
+  const slots = bottomNavSlots(itensVisiveis);
+  const restantes = itensMais(itensVisiveis);
   const logout = useLogout();
   const algumRestanteAtivo = restantes.some((i) => rotaAtiva(i.to, pathname));
 

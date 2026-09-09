@@ -6,7 +6,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
 
 import type { Env } from '../config/env.js';
-import { UnauthorizedError } from '../lib/errors.js';
+import { ForbiddenError, UnauthorizedError } from '../lib/errors.js';
 
 /** Payload do access token. `sub` = user id. */
 export interface AccessTokenPayload {
@@ -14,6 +14,8 @@ export interface AccessTokenPayload {
   tenantId: string;
   role: UserRole;
   email: string;
+  /** Administrador da plataforma (painel /admin), independente de `role`. */
+  admin: boolean;
 }
 
 export interface AuthPluginOptions {
@@ -41,6 +43,13 @@ export const authPlugin = fp<AuthPluginOptions>(
         throw new UnauthorizedError('Token sem identificação de tenant');
       }
       request.tenantId = payload.tenantId;
+    });
+
+    // Usar sempre depois de app.authenticate (registry.ts: requiresAuth + requiresAdmin).
+    app.decorate('requireAdmin', async (request: FastifyRequest, _reply: FastifyReply) => {
+      if (!request.user?.admin) {
+        throw new ForbiddenError('Acesso restrito a administradores');
+      }
     });
   },
   { name: 'meifin-auth', dependencies: ['meifin-db'] },

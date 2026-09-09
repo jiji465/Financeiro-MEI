@@ -28,6 +28,7 @@
     "db:seed:demo": "pnpm --filter @meifin/api db:seed:demo",
     "db:reset": "pnpm --filter @meifin/api db:reset",
     "db:backup": "pnpm --filter @meifin/api db:backup",
+    "db:promote-admin": "pnpm --filter @meifin/api db:promote-admin",
     "env:check": "tsx scripts/check-env.ts",
     "clean": "tsx scripts/clean.ts"
   },

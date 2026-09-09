@@ -4,6 +4,7 @@
 import type { ComponentType } from 'react';
 import type { RouteObject } from 'react-router';
 
+import { adminModule } from '@/features/admin';
 import { authModule } from '@/features/auth';
 import { configuracoesModule } from '@/features/configuracoes';
 import { contasModule } from '@/features/contas';
@@ -24,6 +25,8 @@ export interface NavItem {
   ordem?: number;
   /** Aparece na barra inferior mobile (máx. 4 + "Mais"). */
   mobile?: boolean;
+  /** Só aparece para usuários com admin=true (painel de administração). */
+  somenteAdmin?: boolean;
 }
 
 export interface AppModule {
@@ -44,6 +47,7 @@ export const modules: readonly AppModule[] = [
   dasModule,
   relatoriosModule,
   configuracoesModule,
+  adminModule,
 ];
 
 export const navItems: readonly NavItem[] = modules

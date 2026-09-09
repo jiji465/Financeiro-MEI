@@ -4,12 +4,14 @@
 import type { FastifyInstance } from 'fastify';
 
 import { buildApp } from '../apps/api/src/app.js';
-import { loadEnv } from '../apps/api/src/config/env.js';
+import { type Env, loadEnv } from '../apps/api/src/config/env.js';
 import { createDb, type Database, MEMORY_DATA_DIR } from '../apps/api/src/db/index.js';
 import { runSeeds } from '../apps/api/src/db/seed/index.js';
+import { criarAuthService } from '../apps/api/src/modules/auth/service.js';
 
 export interface SmokeContext {
   app: FastifyInstance;
+  env: Env;
   database: Database;
   /** Estado compartilhado entre passos (tokens, ids criados etc.). */
   estado: Record<string, unknown>;
@@ -37,29 +39,30 @@ export const PASSOS: Passo[] = [
     },
   },
   {
-    nome: '1. POST /auth/signup → POST /auth/login → GET /auth/me',
-    async run({ app, estado }) {
+    nome: '1. Criar conta (via admin, cadastro público não existe mais) → POST /auth/login → GET /auth/me',
+    async run({ app, env, database, estado }) {
       const email = `smoke-${Date.now()}@meifin.test`;
       const senha = 'Smoke@12345';
-      const signup = await app.inject({
-        method: 'POST',
-        url: '/api/v1/auth/signup',
-        payload: { nome: 'MEI Smoke', email, senha, atividade: 'comercio_servicos' },
+      // Cadastro público foi removido (seção 11 do plano): quem cria conta é sempre o admin
+      // (POST /admin/contas). Aqui usamos a mesma função interna diretamente, sem passar por
+      // um admin de verdade, só para validar a criação de tenant/usuário/categorias ponta a ponta.
+      // app.jwt só existe em tempo de execução (decorado pelo plugin @fastify/jwt); o tipo
+      // FastifyInstance "puro" que este script enxerga (fora do projeto apps/api) não inclui essa
+      // augmentação — daqui vem o cast pontual abaixo, só para o assinar do token.
+      const jwtSign = (app as unknown as { jwt: { sign: (p: unknown) => string } }).jwt.sign;
+      const authService = criarAuthService({
+        database,
+        env,
+        mailer: { enviar: async () => {} },
+        sign: (payload) => jwtSign(payload),
       });
-      esperar(
-        signup.statusCode === 201,
-        `signup: esperado 201, recebido ${signup.statusCode}: ${signup.body}`,
+      const signup = await authService.signup(
+        { nome: 'MEI Smoke', email, senha, atividade: 'comercio_servicos' },
+        {},
       );
-      const corpo = signup.json<{
-        accessToken: string;
-        tenant: { id: string };
-        user: { id: string };
-      }>();
-      esperar(typeof corpo.accessToken === 'string', 'signup sem accessToken');
-      const cookie = (signup.cookies as Array<{ name: string; value: string }>).find(
-        (c) => c.name === 'refresh_token',
-      );
-      esperar(!!cookie?.value, 'signup sem cookie refresh_token');
+      esperar(typeof signup.accessToken === 'string', 'signup sem accessToken');
+      esperar(signup.tenant.id.length > 0, 'signup sem tenant');
+      const corpo = signup;
 
       const login = await app.inject({
         method: 'POST',
@@ -136,7 +139,7 @@ async function main() {
   await runSeeds(database.db);
   const app = await buildApp({ env, db: database, logger: false });
   await app.ready();
-  const ctx: SmokeContext = { app, database, estado: {} };
+  const ctx: SmokeContext = { app, env, database, estado: {} };
 
   let falhou = false;
   try {

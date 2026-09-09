@@ -13,6 +13,7 @@ import { AuthLayout } from '@/components/layout/auth-layout';
 import { PageSkeleton } from '@/components/ui/skeleton';
 import { RedirectIfAuth } from '@/features/auth/redirect-if-auth';
 import { RequireAuth } from '@/features/auth/require-auth';
+import { LandingPage } from '@/features/vendas/landing-page';
 
 const rotasPublicas: RouteObject[] = modules
   .filter((m) => m.id === 'auth')
@@ -36,7 +37,7 @@ export function criarRotas(): RouteObject[] {
     {
       path: '/',
       element: (
-        <RequireAuth>
+        <RequireAuth fallbackPublico={<LandingPage />}>
           <AppShell />
         </RequireAuth>
       ),

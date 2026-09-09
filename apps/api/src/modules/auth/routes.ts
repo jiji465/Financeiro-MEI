@@ -10,7 +10,6 @@ import {
   meResponse,
   refreshResponse,
   resetPasswordBody,
-  signupBody,
 } from '@meifin/shared';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
@@ -50,22 +49,9 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
   const clearRefreshCookie = (reply: FastifyReply) =>
     reply.clearCookie(REFRESH_COOKIE, { path: REFRESH_COOKIE_PATH });
 
-  app.post(
-    '/signup',
-    {
-      schema: {
-        tags: TAGS,
-        summary: 'Cria a conta do MEI (tenant + usuário + categorias padrão)',
-        body: signupBody,
-        response: { 201: authResponse, 400: errorResponse, 409: errorResponse },
-      },
-    },
-    async (request, reply) => {
-      const { refreshToken, ...corpo } = await service.signup(request.body, metaDe(request));
-      setRefreshCookie(reply, refreshToken);
-      return reply.status(201).send(corpo);
-    },
-  );
+  // POST /signup removido: cadastro deixou de ser self-service (seção 11 do plano). Quem cria
+  // conta agora é sempre o admin, via POST /admin/contas (apps/api/src/modules/admin/routes.ts),
+  // que reaproveita service.signup(...) diretamente (sem passar por HTTP público).
 
   app.post(
     '/login',

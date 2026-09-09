@@ -27,11 +27,10 @@ export function useLogin() {
   });
 }
 
-export function useSignup() {
-  const entrar = useEntrarComSessao();
+/** Cadastro deixou de ser self-service: só registra o pedido, sem logar automaticamente. */
+export function useSolicitarAcesso() {
   return useMutation({
-    mutationFn: authApi.signup,
-    onSuccess: entrar,
+    mutationFn: authApi.solicitarAcesso,
     meta: { silent: true },
   });
 }

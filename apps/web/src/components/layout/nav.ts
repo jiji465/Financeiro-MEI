@@ -27,6 +27,11 @@ export const BOTTOM_NAV_PADRAO: readonly NavItem[] = [
   { id: 'das', label: 'DAS', to: '/das', icon: Landmark, ordem: 40 },
 ];
 
+/** Remove itens `somenteAdmin` quando o usuário atual não é administrador da plataforma. */
+export function filtrarPorAdmin(itens: readonly NavItem[], admin: boolean): NavItem[] {
+  return admin ? [...itens] : itens.filter((i) => !i.somenteAdmin);
+}
+
 function grupoDe(item: NavItem): string | undefined {
   // `grupo` é opcional e pode não existir no tipo; respeitamos se a feature informar.
   const g = (item as NavItem & { grupo?: unknown }).grupo;

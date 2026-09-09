@@ -1,67 +1,35 @@
+// Cadastro deixou de ser self-service (seção 11 do plano): este formulário só registra um pedido
+// de acesso. Quem cria a conta de verdade é o admin, pelo painel, depois de entrar em contato.
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  ATIVIDADES,
-  CAMINHONEIRO_TRIBUTOS,
-  email as emailSchema,
-  hojeSP,
-  isoDate,
-  senha as senhaSchema,
-  signupBody,
-} from '@meifin/shared';
-import { Eye, EyeOff } from 'lucide-react';
-import { useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { ATIVIDADES, criarSolicitacaoBody, email as emailSchema } from '@meifin/shared';
+import { CheckCircle2 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
 import { Link } from 'react-router';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import {
-  FormDateInput,
   FormInput,
   FormMaskedInput,
   FormRadioCards,
   FormRootError,
+  FormTextarea,
 } from '@/components/ui/form-field';
 import { aplicarErrosDoServidor } from '@/lib/api/errors';
-import { isValidCNPJ } from '@/lib/format/documento';
-import {
-  ATIVIDADE_DESCRICOES,
-  ATIVIDADE_LABELS,
-  CAMINHONEIRO_TRIBUTOS_LABELS,
-  opcoesDe,
-} from '@/lib/labels';
-import { cn } from '@/lib/utils/cn';
+import { ATIVIDADE_DESCRICOES, ATIVIDADE_LABELS } from '@/lib/labels';
 
-import { useSignup } from '../hooks';
+import { useSolicitarAcesso } from '../hooks';
 
-const cadastroSchema = z
-  .object({
-    nome: z.string().trim().min(2, 'Informe seu nome').max(120, 'Nome muito longo'),
-    email: emailSchema,
-    senha: senhaSchema,
-    confirmarSenha: z.string(),
-    cnpj: z
-      .string()
-      .optional()
-      .refine((v) => !v || isValidCNPJ(v), 'CNPJ inválido'),
-    atividade: z.enum(ATIVIDADES, { error: 'Escolha a atividade do seu MEI' }),
-    caminhoneiroTributos: z.enum(CAMINHONEIRO_TRIBUTOS).optional(),
-    dataAbertura: z
-      .union([z.literal(''), isoDate])
-      .optional()
-      .refine((v) => !v || v <= hojeSP(), 'A data de abertura não pode ser futura'),
-  })
-  .refine((v) => v.senha === v.confirmarSenha, {
-    path: ['confirmarSenha'],
-    message: 'As senhas não conferem',
-  })
-  .refine((v) => v.atividade !== 'caminhoneiro' || v.caminhoneiroTributos !== undefined, {
-    path: ['caminhoneiroTributos'],
-    message: 'Informe quais tributos o caminhoneiro recolhe (ICMS, ISS ou ambos)',
-  });
+const solicitarSchema = z.object({
+  nome: z.string().trim().min(2, 'Informe seu nome').max(120, 'Nome muito longo'),
+  email: emailSchema,
+  telefone: z.string().optional(),
+  atividade: z.enum(ATIVIDADES).optional(),
+  mensagem: z.string().trim().max(2000).optional(),
+});
 
-type CadastroForm = z.input<typeof cadastroSchema>;
-type CadastroValores = z.output<typeof cadastroSchema>;
+type SolicitarForm = z.input<typeof solicitarSchema>;
+type SolicitarValores = z.output<typeof solicitarSchema>;
 
 const OPCOES_ATIVIDADE = ATIVIDADES.map((value) => ({
   value,
@@ -69,104 +37,52 @@ const OPCOES_ATIVIDADE = ATIVIDADES.map((value) => ({
   descricao: ATIVIDADE_DESCRICOES[value],
 }));
 
-const OPCOES_TRIBUTOS = opcoesDe(CAMINHONEIRO_TRIBUTOS, CAMINHONEIRO_TRIBUTOS_LABELS);
-
-/** Pontuação 0-4 de força da senha (tamanho + variedade de caracteres). */
-export function forcaDaSenha(senha: string): { nivel: 0 | 1 | 2 | 3 | 4; rotulo: string } {
-  if (!senha) return { nivel: 0, rotulo: '' };
-  let pontos = 0;
-  if (senha.length >= 8) pontos += 1;
-  if (senha.length >= 12) pontos += 1;
-  const classes = [/[a-z]/, /[A-Z]/, /\d/, /[^\w\s]/].filter((re) => re.test(senha)).length;
-  if (classes >= 2) pontos += 1;
-  if (classes >= 3) pontos += 1;
-  const nivel = Math.min(4, Math.max(1, pontos)) as 1 | 2 | 3 | 4;
-  const rotulos = { 1: 'Fraca', 2: 'Razoável', 3: 'Boa', 4: 'Forte' } as const;
-  return { nivel, rotulo: rotulos[nivel] };
-}
-
-function ForcaSenha({ senha }: { senha: string }) {
-  const { nivel, rotulo } = forcaDaSenha(senha);
-  if (!senha) return null;
-  const cores = ['', 'bg-perigo-500', 'bg-alerta-500', 'bg-receita-500', 'bg-receita-600'];
-  return (
-    <div className="mt-1.5" aria-live="polite">
-      <div className="flex gap-1" aria-hidden="true">
-        {[1, 2, 3, 4].map((n) => (
-          <span
-            key={n}
-            className={cn('h-1.5 flex-1 rounded-full bg-zinc-200', n <= nivel && cores[nivel])}
-          />
-        ))}
-      </div>
-      <p className="mt-1 text-xs text-zinc-500">
-        Força da senha: <span className="font-medium">{rotulo}</span>
-        {nivel < 3 ? ' — use letras, números e símbolos.' : ''}
-      </p>
-    </div>
-  );
-}
-
 export function CadastroPage() {
-  const [mostrarSenha, setMostrarSenha] = useState(false);
-  const signup = useSignup();
-  const form = useForm<CadastroForm, unknown, CadastroValores>({
-    resolver: zodResolver(cadastroSchema),
-    defaultValues: {
-      nome: '',
-      email: '',
-      senha: '',
-      confirmarSenha: '',
-      cnpj: '',
-      atividade: undefined,
-      caminhoneiroTributos: undefined,
-      dataAbertura: '',
-    },
+  const solicitar = useSolicitarAcesso();
+  const form = useForm<SolicitarForm, unknown, SolicitarValores>({
+    resolver: zodResolver(solicitarSchema),
+    defaultValues: { nome: '', email: '', telefone: '', atividade: undefined, mensagem: '' },
   });
-  const senha = useWatch({ control: form.control, name: 'senha' }) ?? '';
-  const atividade = useWatch({ control: form.control, name: 'atividade' });
 
-  const onSubmit = (valores: CadastroValores) => {
-    const body = signupBody.safeParse({
+  if (solicitar.isSuccess) {
+    return (
+      <div className="text-center">
+        <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-receita-50 text-receita-700">
+          <CheckCircle2 className="size-6" aria-hidden="true" />
+        </div>
+        <h1 className="mt-4 text-xl font-bold tracking-tight">Pedido recebido</h1>
+        <p className="mt-2 text-sm text-zinc-600">
+          Obrigado! Entraremos em contato em breve para liberar seu acesso ao MEI Financeiro.
+        </p>
+        <Button asChild className="mt-6 w-full" size="lg" variant="outline">
+          <Link to="/entrar">Já tenho conta</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  const onSubmit = (valores: SolicitarValores) => {
+    const body = criarSolicitacaoBody.safeParse({
       nome: valores.nome,
       email: valores.email,
-      senha: valores.senha,
-      cnpj: valores.cnpj || undefined,
+      telefone: valores.telefone || undefined,
       atividade: valores.atividade,
-      caminhoneiroTributos:
-        valores.atividade === 'caminhoneiro' ? valores.caminhoneiroTributos : undefined,
-      dataAbertura: valores.dataAbertura || undefined,
+      mensagem: valores.mensagem || undefined,
     });
     if (!body.success) {
       form.setError('root.serverError', { message: 'Revise os dados informados.' });
       return;
     }
-    signup.mutate(body.data, {
+    solicitar.mutate(body.data, {
       onError: (err) => aplicarErrosDoServidor(err, form.setError),
     });
   };
 
-  const olho = (
-    <button
-      type="button"
-      onClick={() => setMostrarSenha((v) => !v)}
-      aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
-      aria-pressed={mostrarSenha}
-      className="flex size-9 items-center justify-center rounded-md hover:bg-zinc-100"
-    >
-      {mostrarSenha ? (
-        <EyeOff className="size-4" aria-hidden="true" />
-      ) : (
-        <Eye className="size-4" aria-hidden="true" />
-      )}
-    </button>
-  );
-
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight">Criar conta</h1>
+      <h1 className="text-2xl font-bold tracking-tight">Solicitar acesso</h1>
       <p className="mt-1 text-sm text-zinc-500">
-        Leva menos de um minuto. Você pode completar os dados do MEI depois.
+        O acesso não é aberto: preencha seus dados e entraremos em contato para liberar sua conta.
       </p>
 
       <form className="mt-6 space-y-4" onSubmit={form.handleSubmit(onSubmit)} noValidate>
@@ -188,63 +104,34 @@ export function CadastroPage() {
           inputMode="email"
           placeholder="voce@exemplo.com.br"
         />
-        <div>
-          <FormInput
-            control={form.control}
-            name="senha"
-            label="Senha"
-            type={mostrarSenha ? 'text' : 'password'}
-            autoComplete="new-password"
-            hint="Mínimo de 8 caracteres."
-            sufixo={olho}
-          />
-          <ForcaSenha senha={senha} />
-        </div>
-        <FormInput
-          control={form.control}
-          name="confirmarSenha"
-          label="Confirmar senha"
-          type={mostrarSenha ? 'text' : 'password'}
-          autoComplete="new-password"
-        />
-
         <FormMaskedInput
           control={form.control}
-          name="cnpj"
-          mask="cnpj"
-          label="CNPJ"
+          name="telefone"
+          mask="telefone"
+          label="Telefone"
           opcional
-          hint="Se ainda não formalizou, deixe em branco."
+          hint="Facilita o contato — pode deixar em branco."
         />
 
         <FormRadioCards
           control={form.control}
           name="atividade"
-          label="Atividade do MEI"
-          hint="Define quais tributos entram no DAS mensal."
+          label="Atividade do seu MEI"
+          hint="Opcional — se ainda não tiver certeza, deixe em branco."
           options={OPCOES_ATIVIDADE}
         />
 
-        {atividade === 'caminhoneiro' ? (
-          <FormRadioCards
-            control={form.control}
-            name="caminhoneiroTributos"
-            label="Tributos do MEI Caminhoneiro"
-            options={OPCOES_TRIBUTOS}
-          />
-        ) : null}
-
-        <FormDateInput
+        <FormTextarea
           control={form.control}
-          name="dataAbertura"
-          label="Data de abertura do MEI"
+          name="mensagem"
+          label="Conte um pouco sobre o seu negócio"
           opcional
-          max={hojeSP()}
-          hint="Usada para calcular o limite proporcional no primeiro ano."
+          rows={3}
+          placeholder="Ex.: vendo produtos artesanais online e quero organizar o financeiro."
         />
 
-        <Button type="submit" className="w-full" size="lg" loading={signup.isPending}>
-          Criar conta
+        <Button type="submit" className="w-full" size="lg" loading={solicitar.isPending}>
+          Solicitar acesso
         </Button>
       </form>
 

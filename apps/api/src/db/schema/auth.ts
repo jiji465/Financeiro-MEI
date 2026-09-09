@@ -24,6 +24,9 @@ export const users = pgTable(
     email: text('email').notNull(),
     senhaHash: text('senha_hash').notNull(),
     role: userRoleEnum('role').notNull().default('owner'),
+    /** Administrador da plataforma (painel /admin) — independente de `role`, que é o papel dentro
+     * do próprio tenant. Nunca alterado por rotas públicas. */
+    admin: boolean('admin').notNull().default(false),
     ultimoLoginAt: timestamptz('ultimo_login_at'),
     ativo: boolean('ativo').notNull().default(true),
     ...timestamps(),

@@ -109,6 +109,7 @@ export async function buildApp({
     await app.register(
       async (scope) => {
         if (mod.requiresAuth) scope.addHook('onRequest', scope.authenticate);
+        if (mod.requiresAdmin) scope.addHook('onRequest', scope.requireAdmin);
         await scope.register(mod.plugin);
       },
       { prefix: `${API_PREFIX}${mod.prefix}` },

@@ -63,6 +63,10 @@ export type RegimeApuracao = (typeof REGIMES_APURACAO)[number];
 export const USER_ROLES = ['owner', 'membro'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
+/** Status de um pedido de acesso ("solicitar acesso" — cadastro deixou de ser self-service). */
+export const STATUS_SOLICITACAO = ['pendente', 'aprovada', 'recusada'] as const;
+export type StatusSolicitacao = (typeof STATUS_SOLICITACAO)[number];
+
 // Enumerações calculadas (não persistidas): status do DAS, nível do limite, agrupamentos etc.
 export const STATUS_DAS = ['pago', 'pendente', 'atrasado', 'futuro'] as const;
 export type StatusDas = (typeof STATUS_DAS)[number];
@@ -216,6 +220,12 @@ export const LABEL_REGIME_APURACAO: Record<RegimeApuracao, string> = {
 export const LABEL_USER_ROLE: Record<UserRole, string> = {
   owner: 'Titular',
   membro: 'Membro',
+};
+
+export const LABEL_STATUS_SOLICITACAO: Record<StatusSolicitacao, string> = {
+  pendente: 'Pendente',
+  aprovada: 'Aprovada',
+  recusada: 'Recusada',
 };
 
 export const LABEL_STATUS_DAS: Record<StatusDas, string> = {

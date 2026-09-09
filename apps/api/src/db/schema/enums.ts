@@ -11,6 +11,7 @@ import {
   STATUS_LANCAMENTO,
   STATUS_NOTA,
   STATUS_PARCELA,
+  STATUS_SOLICITACAO,
   STATUS_TITULO,
   TIPOS_CONTATO,
   TIPOS_LANCAMENTO,
@@ -36,3 +37,4 @@ export const statusNotaEnum = pgEnum('status_nota', STATUS_NOTA);
 export const statusDasnEnum = pgEnum('status_dasn', STATUS_DASN);
 export const regimeApuracaoEnum = pgEnum('regime_apuracao', REGIMES_APURACAO);
 export const userRoleEnum = pgEnum('user_role', USER_ROLES);
+export const statusSolicitacaoEnum = pgEnum('status_solicitacao', STATUS_SOLICITACAO);

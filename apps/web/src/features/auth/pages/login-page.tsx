@@ -91,7 +91,7 @@ export function LoginPage() {
           to={cadastroHref}
           className="font-medium text-primary-700 underline-offset-4 hover:underline"
         >
-          Criar conta grátis
+          Solicitar acesso
         </Link>
       </p>
     </div>

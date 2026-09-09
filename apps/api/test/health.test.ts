@@ -54,12 +54,14 @@ describe('GET /api/v1/health e infraestrutura', () => {
     expect(Object.keys(doc.paths)).toEqual(
       expect.arrayContaining([
         '/api/v1/health',
-        '/api/v1/auth/signup',
+        '/api/v1/solicitacoes-acesso',
         '/api/v1/auth/refresh',
         '/api/v1/auth/me/senha',
         '/api/v1/categorias',
         '/api/v1/categorias/{id}',
         '/api/v1/configuracoes',
+        '/api/v1/admin/contas',
+        '/api/v1/admin/tenants/{id}',
       ]),
     );
     // Rotas de coleção registradas como '' (sem barra final duplicada na documentação)

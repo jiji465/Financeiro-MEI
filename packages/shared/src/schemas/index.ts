@@ -13,3 +13,5 @@ export * from './dashboard.js';
 export * from './relatorios.js';
 export * from './importacoes.js';
 export * from './configuracoes.js';
+export * from './solicitacoes.js';
+export * from './admin.js';

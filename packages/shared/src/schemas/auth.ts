@@ -64,6 +64,8 @@ export const authUser = z.object({
   nome: z.string(),
   email: z.string(),
   role: z.enum(USER_ROLES),
+  /** Administrador da plataforma (não confundir com `role`, que é o papel dentro do próprio tenant). */
+  admin: z.boolean(),
 });
 export type AuthUser = z.infer<typeof authUser>;
 
