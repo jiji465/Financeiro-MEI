@@ -123,8 +123,7 @@ Arranjo 100% gratuito, sem cartão de crédito. Três peças:
    `CORS_ORIGIN` (o domínio que a Vercel vai te dar no passo 3 — pode deixar em branco e voltar
    aqui depois). `JWT_ACCESS_SECRET` e `JWT_REFRESH_SECRET` são gerados automaticamente pelo
    Render. As migrações são aplicadas automaticamente no boot (`start:prod`). Anote a URL que o
-   Render gerar, por exemplo `https://meifin-api.onrender.com` — é o `API_ORIGIN` do próximo
-   passo.
+   Render gerar, por exemplo `https://meifin-api.onrender.com`.
 
    > O plano gratuito do Render "dorme" após alguns minutos sem uso: a primeira requisição depois
    > de um tempo pode demorar ~30s para acordar. Normal em um plano gratuito.
@@ -134,11 +133,14 @@ Arranjo 100% gratuito, sem cartão de crédito. Três peças:
    compilar só `apps/web`, para que o pacote compartilhado `@meifin/shared` resolva
    corretamente). O `vercel.json` também define um _rewrite_ de `/api/*` para a API do Render,
    para que o navegador só converse com um único domínio (necessário para o cookie de sessão
-   funcionar sem configuração extra de CORS entre domínios). Configure a variável de ambiente
-   da Vercel `API_ORIGIN` com a URL do Render do passo 2 antes do primeiro deploy (o rewrite lê
-   essa variável).
+   funcionar sem configuração extra de CORS entre domínios). **Antes do primeiro deploy, edite
+   `vercel.json` no repositório** e troque a URL de exemplo em `rewrites[0].destination` pela URL
+   real da sua API no Render do passo 2 (mantendo o `/api/:path*` no final). O `vercel.json` é um
+   arquivo estático — não dá para usar uma variável de ambiente aqui, então a URL precisa estar
+   escrita diretamente no arquivo.
 4. Volte no Render e atualize `APP_URL`/`CORS_ORIGIN` com o domínio final da Vercel, se ele
-   mudou depois do primeiro deploy.
+   mudou depois do primeiro deploy. Se você trocar a URL da API no Render no futuro, lembre de
+   atualizar `vercel.json` também.
 
 Depois do primeiro deploy, teste: abra o domínio da Vercel, crie uma conta, registre um
 lançamento e confira o dashboard — tudo passa pela API no Render e pelo banco no
