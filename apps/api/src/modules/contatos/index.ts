@@ -1,7 +1,11 @@
-// Preenchido por WP1 (Contatos): rotas em routes.ts, regras em service.ts, acesso a dados em repository.ts.
-// O plugin recebe a instância já com o type provider zod; use app.db / app.env / request.tenantId.
+// Módulo contatos (WP1): rotas em routes.ts, regras em service.ts, acesso a dados em repository.ts.
+// O plugin recebe a instância já com o type provider zod; usa app.db / app.hoje / request.tenantId.
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 
-export const contatosModule: FastifyPluginAsyncZod = async (_app) => {
-  // stub do Phase 0
+import { contatosRoutes } from './routes.js';
+
+export const contatosModule: FastifyPluginAsyncZod = async (app) => {
+  await app.register(contatosRoutes);
 };
+
+export { toContatoDto, toContatoOpcaoDto } from './service.js';
