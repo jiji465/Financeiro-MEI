@@ -5,8 +5,10 @@ clientes e fornecedores, contas a pagar/receber, notas fiscais, DAS e obrigaçõ
 dashboard, relatórios (CSV/PDF), importação de extratos e configurações. Aplicação web
 multiusuário (cada MEI é um _tenant_ isolado).
 
-> **Estado atual:** Phase 0 (bootstrap). A estrutura, as ferramentas e os contratos estão
-> prontos; as funcionalidades chegam nas próximas fases.
+> **Estado atual:** v1 completa. Autenticação e multiusuário, lançamentos (com recorrência e
+> anexos), clientes e fornecedores, contas a pagar/receber, notas fiscais, DAS/DASN e limite
+> anual, dashboard, relatórios com exportação CSV/PDF, importação de extrato CSV e configurações
+> — tudo implementado, testado e integrado.
 
 ## Requisitos
 
@@ -65,7 +67,9 @@ pnpm check                         # typecheck + lint + format + testes + smoke
   Propositalmente **fora do OneDrive**. Para mudar, defina `PGLITE_DATA_DIR` no `.env`.
 - **Backups:** `%LOCALAPPDATA%\meifin\backups`.
 - **Testes:** PGlite em memória (`memory://`), nada é gravado em disco.
-- **Anexos/uploads (dev):** `.data/` dentro do repositório (ignorado pelo git).
+- **Anexos/uploads (dev, `STORAGE_DRIVER=local`):** `%LOCALAPPDATA%\meifin\uploads` — pasta
+  irmã da do PGlite, também fora do OneDrive e do repositório. Em produção com disco efêmero
+  (ex.: Render), use `STORAGE_DRIVER=s3` (veja a seção de deploy abaixo).
 
 ## Aviso sobre OneDrive
 
@@ -103,16 +107,51 @@ Veja `.env.example`. As mais importantes:
 | `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | valores `dev-…`                | ≥ 32 caracteres; produção rejeita prefixo `dev-` |
 | `SERVE_WEB` / `WEB_DIST_DIR`               | `false` / `apps/web/dist`      | API serve o frontend compilado                   |
 | `SWAGGER`                                  | `true` fora de produção        | Documentação em `/docs`                          |
+| `STORAGE_DRIVER`                           | `local`                        | `s3` para anexos em disco efêmero (ex.: Render)  |
 
-## Deploy (resumo)
+## Deploy: Vercel (frontend) + Render (API) + Supabase/Neon (banco)
 
-1. Crie um projeto gratuito no [Supabase](https://supabase.com) ou [Neon](https://neon.tech) e copie a
-   _connection string_ (Postgres).
-2. No servidor (Railway, Render ou similar) defina `NODE_ENV=production`, `DATABASE_URL=<URL copiada>`,
-   `JWT_ACCESS_SECRET` e `JWT_REFRESH_SECRET` (aleatórios, ≥ 32 caracteres), `SERVE_WEB=true`,
-   `HOST=0.0.0.0` e `APP_URL=https://<seu-dominio>`.
-3. Build: `pnpm install && pnpm build`. Start: `pnpm --filter @meifin/api start:prod`.
-   As migrações são aplicadas automaticamente no boot.
+Arranjo 100% gratuito, sem cartão de crédito. Três peças:
 
-Para testar localmente contra o Supabase/Neon basta colar a `DATABASE_URL` no `.env` e rodar
-`pnpm dev` — a API troca de PGlite para Postgres sozinha.
+1. **Banco — Supabase ou Neon.** Crie um projeto gratuito em
+   [supabase.com](https://supabase.com) ou [neon.tech](https://neon.tech) e copie a
+   _connection string_ do Postgres (em produção use a porta 6543 / "Transaction pooler" do
+   Supabase, ou a URL padrão do Neon). Guarde essa URL — é o `DATABASE_URL`.
+2. **API — Render Web Service.** No painel do Render, "New" → "Blueprint", aponte para este
+   repositório: o `render.yaml` da raiz já configura o build e o start. No painel, preencha
+   apenas as variáveis marcadas como manuais: `DATABASE_URL` (a do passo 1), `APP_URL` e
+   `CORS_ORIGIN` (o domínio que a Vercel vai te dar no passo 3 — pode deixar em branco e voltar
+   aqui depois). `JWT_ACCESS_SECRET` e `JWT_REFRESH_SECRET` são gerados automaticamente pelo
+   Render. As migrações são aplicadas automaticamente no boot (`start:prod`). Anote a URL que o
+   Render gerar, por exemplo `https://meifin-api.onrender.com` — é o `API_ORIGIN` do próximo
+   passo.
+
+   > O plano gratuito do Render "dorme" após alguns minutos sem uso: a primeira requisição depois
+   > de um tempo pode demorar ~30s para acordar. Normal em um plano gratuito.
+
+3. **Frontend — Vercel.** Importe o repositório na Vercel **sem alterar o Root Directory**
+   (deixe a raiz do repositório — o `vercel.json` cuida de instalar o workspace inteiro e
+   compilar só `apps/web`, para que o pacote compartilhado `@meifin/shared` resolva
+   corretamente). O `vercel.json` também define um _rewrite_ de `/api/*` para a API do Render,
+   para que o navegador só converse com um único domínio (necessário para o cookie de sessão
+   funcionar sem configuração extra de CORS entre domínios). Configure a variável de ambiente
+   da Vercel `API_ORIGIN` com a URL do Render do passo 2 antes do primeiro deploy (o rewrite lê
+   essa variável).
+4. Volte no Render e atualize `APP_URL`/`CORS_ORIGIN` com o domínio final da Vercel, se ele
+   mudou depois do primeiro deploy.
+
+Depois do primeiro deploy, teste: abra o domínio da Vercel, crie uma conta, registre um
+lançamento e confira o dashboard — tudo passa pela API no Render e pelo banco no
+Supabase/Neon.
+
+**Testar localmente contra o banco de produção:** cole a `DATABASE_URL` do Supabase/Neon no
+`.env` e rode `pnpm dev` — a API troca de PGlite para Postgres sozinha, sem mudar código.
+
+**Alternativa de um serviço só** (sem Vercel): defina `SERVE_WEB=true` e a própria API do
+Render também serve os arquivos estáticos do `apps/web/dist` (build único, um domínio). Útil
+para testes rápidos; o arranjo Vercel + Render acima é o recomendado para uso real.
+
+**Anexos em produção:** por padrão os anexos de lançamentos/notas ficam em disco local, que no
+Render é efêmero (some a cada deploy). Para produção, configure `STORAGE_DRIVER=s3` com um
+bucket do [Supabase Storage](https://supabase.com/storage) (compatível com S3) — veja
+`.env.example` para as variáveis `S3_*`.

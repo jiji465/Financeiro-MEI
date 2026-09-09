@@ -1,0 +1,45 @@
+# Blueprint do Render para a API (apps/api). O frontend (apps/web) é publicado à parte na
+# Vercel — veja o README, seção "Deploy: Vercel + Render + Supabase/Neon".
+#
+# Depois de conectar este repositório no Render (New > Blueprint), preencha no painel os
+# valores marcados "sync: false" abaixo: DATABASE_URL (Supabase/Neon), APP_URL e CORS_ORIGIN
+# (o domínio que a Vercel gerar). JWT_ACCESS_SECRET/JWT_REFRESH_SECRET são gerados
+# automaticamente pelo Render (generateValue), não precisa preencher.
+services:
+  - type: web
+    name: meifin-api
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: >-
+      corepack enable &&
+      corepack prepare pnpm@10.18.0 --activate &&
+      pnpm install --frozen-lockfile &&
+      pnpm --filter @meifin/shared build &&
+      pnpm --filter @meifin/api build
+    startCommand: pnpm --filter @meifin/api start:prod
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.20.0
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      # DATABASE_URL: connection string do Supabase (porta 6543, "Transaction pooler") ou Neon.
+      - key: DATABASE_URL
+        sync: false
+      # APP_URL / CORS_ORIGIN: domínio final da Vercel, ex. https://meifin.vercel.app
+      - key: APP_URL
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      # Anexos: o disco do plano gratuito do Render é efêmero. Para produção de verdade, troque
+      # para STORAGE_DRIVER=s3 e preencha as variáveis S3_* com um bucket do Supabase Storage
+      # (veja .env.example). Deixe "local" para uma primeira avaliação sem anexos persistentes.
+      - key: STORAGE_DRIVER
+        value: local
