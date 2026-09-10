@@ -12,7 +12,7 @@ import {
   textoCurto,
   uuid,
 } from './common.js';
-import { signupBody } from './auth.js';
+import { email, senha, signupBody } from './auth.js';
 
 export const adminUsuarioDto = z.object({
   id: uuid,
@@ -20,6 +20,7 @@ export const adminUsuarioDto = z.object({
   email: z.string(),
   admin: z.boolean(),
   ativo: z.boolean(),
+  deveTrocarSenha: z.boolean(),
   ultimoLoginAt: z.string().nullable(),
   createdAt: z.string(),
 });
@@ -83,6 +84,19 @@ export const criarContaAdminBody = signupBody.and(
   }),
 );
 export type CriarContaAdminBody = z.infer<typeof criarContaAdminBody>;
+
+/** Cria outro administrador puro (sem MEI) direto pelo painel — sem precisar de terminal. */
+export const criarAdministradorBody = z.object({
+  nome: z.string().trim().min(2, 'Informe o nome').max(120),
+  email,
+  senha,
+});
+export type CriarAdministradorBody = z.infer<typeof criarAdministradorBody>;
+
+/** Resposta de POST /admin/usuarios/:id/redefinir-senha — único lugar em que uma senha em claro
+ * sai da API, para o admin repassar à pessoa por fora do sistema. */
+export const redefinirSenhaResponse = itemResponse(z.object({ senha: z.string() }));
+export type RedefinirSenhaResponse = z.infer<typeof redefinirSenhaResponse>;
 
 export const adminUsuarioResponse = itemResponse(adminUsuarioDto);
 export type AdminUsuarioResponse = z.infer<typeof adminUsuarioResponse>;

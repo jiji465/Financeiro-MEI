@@ -24,7 +24,7 @@ import {
 } from '../../lib/errors.js';
 import { daquiA, expirou } from '../../lib/hoje.js';
 import type { Mailer } from '../../lib/mailer.js';
-import { hashSenha, verificarSenha } from '../../lib/senha.js';
+import { gerarSenhaTemporaria, hashSenha, verificarSenha } from '../../lib/senha.js';
 import { gerarToken, hashToken } from '../../lib/tokens.js';
 import type { AccessTokenPayload } from '../../plugins/auth.js';
 import * as configRepo from '../configuracoes/repository.js';
@@ -60,6 +60,7 @@ export function toAuthUser(u: UserRow): AuthUser {
     email: u.email,
     role: u.role,
     admin: u.admin,
+    deveTrocarSenha: u.deveTrocarSenha,
   };
 }
 
@@ -72,8 +73,13 @@ export function toAuthTenant(t: TenantRow): AuthTenant {
     atividade: t.atividade,
     caminhoneiroTributos: t.caminhoneiroTributos,
     dataAbertura: t.dataAbertura,
+    interno: t.interno,
   };
 }
+
+/** Atividade fixa dos tenants internos (administradores puros) — nunca perguntada ao operador,
+ * nunca visível: o tenant interno não aparece em nenhuma listagem/estatística do admin. */
+const ATIVIDADE_TENANT_INTERNO = 'servicos' as const;
 
 export function criarAuthService(deps: AuthDeps) {
   const { database, env, mailer, sign } = deps;
@@ -102,7 +108,11 @@ export function criarAuthService(deps: AuthDeps) {
     return { accessToken, refreshToken };
   }
 
-  async function signup(input: SignupBody, meta: SessaoMeta, opcoes: { admin?: boolean } = {}) {
+  async function signup(
+    input: SignupBody,
+    meta: SessaoMeta,
+    opcoes: { admin?: boolean; deveTrocarSenha?: boolean } = {},
+  ) {
     if (await repo.buscarUserPorEmail(db, input.email)) {
       throw new ConflictError('E-mail já cadastrado', [
         { campo: 'email', mensagem: 'E-mail já cadastrado' },
@@ -138,6 +148,7 @@ export function criarAuthService(deps: AuthDeps) {
         senhaHash,
         role: 'owner',
         admin: opcoes.admin ?? false,
+        deveTrocarSenha: opcoes.deveTrocarSenha ?? false,
         ultimoLoginAt: new Date().toISOString(),
       });
       const criadas = await aplicarCategoriasPadrao(tx, tenant.id, input.atividade);
@@ -150,6 +161,57 @@ export function criarAuthService(deps: AuthDeps) {
     });
 
     return { ...sessao, user: toAuthUser(user), tenant: toAuthTenant(tenant) };
+  }
+
+  /** Cria um administrador puro: não é titular de nenhum MEI de verdade. Tecnicamente ganha um
+   * tenant (satisfaz `tenantId NOT NULL`/FK/JWT sem tocar no núcleo de autenticação), mas esse
+   * tenant é marcado `interno: true` — nunca aparece em listagens/estatísticas do admin, nunca
+   * ganha categorias padrão. Chamado pelo bootstrap de CLI e por outro admin via painel. */
+  async function criarAdminInterno(input: {
+    nome: string;
+    email: string;
+    senha: string;
+  }): Promise<{ user: AuthUser }> {
+    if (await repo.buscarUserPorEmail(db, input.email)) {
+      throw new ConflictError('E-mail já cadastrado', [
+        { campo: 'email', mensagem: 'E-mail já cadastrado' },
+      ]);
+    }
+    const senhaHash = await hashSenha(input.senha);
+    const user = await database.withTx(async (tx) => {
+      const tenant = await repo.inserirTenant(tx, {
+        nome: input.nome,
+        cnpj: null,
+        atividade: ATIVIDADE_TENANT_INTERNO,
+        caminhoneiroTributos: null,
+        dataAbertura: null,
+        emailContato: input.email,
+        interno: true,
+      });
+      await configRepo.inserirPadrao(tx, tenant.id);
+      return repo.inserirUser(tx, {
+        tenantId: tenant.id,
+        nome: input.nome,
+        email: input.email,
+        senhaHash,
+        role: 'owner',
+        admin: true,
+        ultimoLoginAt: null,
+      });
+    });
+    return { user: toAuthUser(user) };
+  }
+
+  /** Gera uma nova senha temporária para o usuário, revoga as sessões abertas dele e devolve a
+   * senha em claro (só essa vez) para o admin repassar por fora do sistema. */
+  async function redefinirSenhaAdmin(userId: string): Promise<string> {
+    const senha = gerarSenhaTemporaria();
+    const senhaHash = await hashSenha(senha);
+    await database.withTx(async (tx) => {
+      await repo.atualizarUser(tx, userId, { senhaHash, deveTrocarSenha: true });
+      await repo.revogarRefreshTokensDoUser(tx, userId);
+    });
+    return senha;
   }
 
   async function login(input: LoginBody, meta: SessaoMeta) {
@@ -272,13 +334,24 @@ export function criarAuthService(deps: AuthDeps) {
     }
     const senhaHash = await hashSenha(input.novaSenha);
     return database.withTx(async (tx) => {
-      await repo.atualizarUser(tx, user.id, { senhaHash });
+      await repo.atualizarUser(tx, user.id, { senhaHash, deveTrocarSenha: false });
       await repo.revogarRefreshTokensDoUser(tx, user.id);
       return emitirSessao(tx, user, meta);
     });
   }
 
-  return { signup, login, refresh, logout, forgotPassword, resetPassword, me, alterarSenha };
+  return {
+    signup,
+    login,
+    refresh,
+    logout,
+    forgotPassword,
+    resetPassword,
+    me,
+    alterarSenha,
+    criarAdminInterno,
+    redefinirSenhaAdmin,
+  };
 }
 
 export type AuthService = ReturnType<typeof criarAuthService>;

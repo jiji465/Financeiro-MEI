@@ -318,5 +318,37 @@ describe('auth', () => {
       });
       expect(login.statusCode).toBe(200);
     });
+
+    it('deveTrocarSenha (senha definida por um admin) some do /me depois da própria pessoa trocar', async () => {
+      const alvo = await signupTenant(ctx.app);
+      await authRepo.atualizarUser(ctx.database.db, alvo.userId, { deveTrocarSenha: true });
+
+      const antes = await ctx.app.inject({
+        method: 'GET',
+        url: `${BASE}/me`,
+        headers: alvo.headers,
+      });
+      expect(
+        antes.json<{ data: { user: { deveTrocarSenha: boolean } } }>().data.user,
+      ).toMatchObject({ deveTrocarSenha: true });
+
+      const troca = await ctx.app.inject({
+        method: 'PATCH',
+        url: `${BASE}/me/senha`,
+        headers: alvo.headers,
+        payload: { senhaAtual: alvo.senha, novaSenha: 'NovaSenha@2' },
+      });
+      expect(troca.statusCode).toBe(200);
+      const novoToken = troca.json<{ accessToken: string }>().accessToken;
+
+      const depois = await ctx.app.inject({
+        method: 'GET',
+        url: `${BASE}/me`,
+        headers: { authorization: `Bearer ${novoToken}` },
+      });
+      expect(
+        depois.json<{ data: { user: { deveTrocarSenha: boolean } } }>().data.user,
+      ).toMatchObject({ deveTrocarSenha: false });
+    });
   });
 });

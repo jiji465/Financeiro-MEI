@@ -21,6 +21,14 @@ export function useAdminTenants(params: ListarTenantsParams = {}) {
   });
 }
 
+export function useAdminTenant(id: string) {
+  return useQuery({
+    queryKey: adminKeys.tenant(id),
+    queryFn: () => adminApi.buscarTenant(id),
+    select: (res) => res.data,
+  });
+}
+
 export function useAdminSolicitacoes(params: ListarSolicitacoesParams = {}) {
   return useQuery({
     queryKey: adminKeys.solicitacoes({ ...params }),
@@ -77,5 +85,25 @@ export function useCriarContaAdmin() {
     mutationFn: adminApi.criarConta,
     onSuccess: () => invalidar(),
     meta: { silent: true, sucesso: 'Conta criada' },
+  });
+}
+
+export function useCriarAdministrador() {
+  const invalidar = useInvalidarAdmin();
+  return useMutation({
+    mutationFn: adminApi.criarAdministrador,
+    onSuccess: () => invalidar(),
+    meta: { silent: true, sucesso: 'Administrador criado' },
+  });
+}
+
+/** A senha gerada aparece só na resposta — a UI mostra num diálogo (mesmo padrão de criar conta),
+ * por isso a mutação é silenciosa (sem toast). */
+export function useRedefinirSenha() {
+  const invalidar = useInvalidarAdmin();
+  return useMutation({
+    mutationFn: adminApi.redefinirSenha,
+    onSuccess: () => invalidar(),
+    meta: { silent: true },
   });
 }

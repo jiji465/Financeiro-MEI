@@ -27,6 +27,9 @@ export const users = pgTable(
     /** Administrador da plataforma (painel /admin) — independente de `role`, que é o papel dentro
      * do próprio tenant. Nunca alterado por rotas públicas. */
     admin: boolean('admin').notNull().default(false),
+    /** true quando a senha atual foi definida por um admin (criação de conta ou redefinição),
+     * não pela própria pessoa — força a troca no próximo login. */
+    deveTrocarSenha: boolean('deve_trocar_senha').notNull().default(false),
     ultimoLoginAt: timestamptz('ultimo_login_at'),
     ativo: boolean('ativo').notNull().default(true),
     ...timestamps(),

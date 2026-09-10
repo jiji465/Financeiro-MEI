@@ -1,9 +1,12 @@
 // Página inicial: cards de resumo, gráfico de 12 meses, limite anual, despesas por categoria,
 // próximos vencimentos, alertas e atalhos.
+import { Navigate } from 'react-router';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { AlertasList, LimiteCard } from '@/features/das';
 import { useMei } from '@/features/referencias';
+import { useAuthStore } from '@/features/auth/store';
 
 import { Atalhos } from '../components/atalhos';
 import { CategoriaDonut } from '../components/categoria-donut';
@@ -13,6 +16,15 @@ import { ResumoCards } from '../components/resumo-cards';
 import { useComparativoMensal, usePorCategoria, useResumoDashboard } from '../hooks';
 
 export function DashboardPage() {
+  const interno = useAuthStore((s) => s.tenant?.interno ?? false);
+  // Administrador puro (seção 13 do plano) não tem MEI de verdade — não há dashboard para ele,
+  // a área dele é o painel de administração.
+  if (interno) return <Navigate to="/admin" replace />;
+
+  return <DashboardPageConteudo />;
+}
+
+function DashboardPageConteudo() {
   const mei = useMei();
   const resumo = useResumoDashboard();
   const comparativo = useComparativoMensal({ meses: 12 });

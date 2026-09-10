@@ -27,8 +27,14 @@ export const BOTTOM_NAV_PADRAO: readonly NavItem[] = [
   { id: 'das', label: 'DAS', to: '/das', icon: Landmark, ordem: 40 },
 ];
 
-/** Remove itens `somenteAdmin` quando o usuário atual não é administrador da plataforma. */
-export function filtrarPorAdmin(itens: readonly NavItem[], admin: boolean): NavItem[] {
+/** Filtra a navegação pelo tipo de conta: um administrador puro (tenant interno, sem MEI de
+ * verdade — seção 13 do plano) só vê os itens `somenteAdmin`; qualquer outra conta (inclusive um
+ * admin híbrido, dono de um MEI real) só perde os itens `somenteAdmin` se não for admin. */
+export function filtrarNav(
+  itens: readonly NavItem[],
+  { admin, interno }: { admin: boolean; interno: boolean },
+): NavItem[] {
+  if (interno) return itens.filter((i) => i.somenteAdmin);
   return admin ? [...itens] : itens.filter((i) => !i.somenteAdmin);
 }
 
@@ -63,21 +69,32 @@ export function agruparNav(itens: readonly NavItem[] = itensSidebar()): NavGrupo
   return [...grupos.values()];
 }
 
-/** Os 4 atalhos da barra inferior: itens com `mobile: true` (por ordem), completados pelo padrão. */
-export function bottomNavSlots(itens: readonly NavItem[] = navItems): NavItem[] {
+/** Os 4 atalhos da barra inferior: itens com `mobile: true` (por ordem), completados pelo padrão
+ * enquanto as features não registram `mobile: true`. `semPadrao` desliga esse complemento — usado
+ * para um administrador puro (seção 13 do plano), que só tem "Administração" (mobile: false) e
+ * não deveria ganhar de volta os atalhos de MEI que o filtro de navegação escondeu. */
+export function bottomNavSlots(
+  itens: readonly NavItem[] = navItems,
+  { semPadrao = false }: { semPadrao?: boolean } = {},
+): NavItem[] {
   const marcados = ordenar(itens.filter((i) => i.mobile)).slice(0, 4);
   if (!marcados.some((i) => i.to === '/')) marcados.unshift(INICIO);
   const slots = marcados.slice(0, 4);
-  for (const padrao of BOTTOM_NAV_PADRAO) {
-    if (slots.length >= 4) break;
-    if (!slots.some((s) => s.to === padrao.to)) slots.push(padrao);
+  if (!semPadrao) {
+    for (const padrao of BOTTOM_NAV_PADRAO) {
+      if (slots.length >= 4) break;
+      if (!slots.some((s) => s.to === padrao.to)) slots.push(padrao);
+    }
   }
   return ordenar(slots);
 }
 
 /** Itens que não cabem na barra inferior (vão para a folha "Mais"). */
-export function itensMais(itens: readonly NavItem[] = navItems): NavItem[] {
-  const slots = bottomNavSlots(itens);
+export function itensMais(
+  itens: readonly NavItem[] = navItems,
+  opcoes: { semPadrao?: boolean } = {},
+): NavItem[] {
+  const slots = bottomNavSlots(itens, opcoes);
   return itensSidebar(itens).filter((i) => !slots.some((s) => s.to === i.to));
 }
 

@@ -7,6 +7,7 @@ import {
   buildTestApp,
   injectComo,
   signupAdmin,
+  signupAdminInterno,
   signupTenant,
   type TestApp,
 } from '../../../test/helpers.js';
@@ -258,6 +259,120 @@ describe('admin', () => {
       }>().data;
       expect(dados.totalTenants).toBeGreaterThanOrEqual(2);
       expect(dados.solicitacoesPendentes).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe('administrador puro (tenant interno — seção 13 do plano)', () => {
+    it('POST /admin/administradores cria um admin sem MEI, que consegue logar', async () => {
+      const admin = await signupAdmin(ctx.app, ctx.database);
+      const res = await injectComo(ctx.app, admin, {
+        method: 'POST',
+        url: `${BASE}/administradores`,
+        payload: { nome: 'Novo Admin', email: 'novo-admin@exemplo.com', senha: 'Senha@12345' },
+      });
+      expect(res.statusCode).toBe(201);
+      const corpo = res.json<{ data: { user: { email: string; admin: boolean } } }>();
+      expect(corpo.data.user).toMatchObject({ email: 'novo-admin@exemplo.com', admin: true });
+
+      const login = await ctx.app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/login',
+        payload: { email: 'novo-admin@exemplo.com', senha: 'Senha@12345' },
+      });
+      expect(login.statusCode).toBe(200);
+      const dados = login.json<{ user: { admin: boolean }; tenant: { interno: boolean } }>();
+      expect(dados.user.admin).toBe(true);
+      expect(dados.tenant.interno).toBe(true);
+    });
+
+    it('tenant interno não aparece em /admin/tenants nem conta em /admin/resumo', async () => {
+      const admin = await signupAdmin(ctx.app, ctx.database);
+      const antes = await injectComo(ctx.app, admin, { method: 'GET', url: `${BASE}/resumo` });
+      const totalAntes = antes.json<{ data: { totalTenants: number; totalUsuarios: number } }>()
+        .data;
+
+      const puro = await signupAdminInterno(ctx.app);
+
+      const lista = await injectComo(ctx.app, admin, {
+        method: 'GET',
+        url: `${BASE}/tenants?pageSize=200`,
+      });
+      const ids = lista.json<{ data: Array<{ id: string }> }>().data.map((t) => t.id);
+      expect(ids).not.toContain(puro.tenantId);
+
+      const depois = await injectComo(ctx.app, admin, { method: 'GET', url: `${BASE}/resumo` });
+      const totalDepois = depois.json<{ data: { totalTenants: number; totalUsuarios: number } }>()
+        .data;
+      expect(totalDepois.totalTenants).toBe(totalAntes.totalTenants);
+      expect(totalDepois.totalUsuarios).toBe(totalAntes.totalUsuarios);
+    });
+
+    it('GET /admin/tenants/:id do tenant interno devolve 404 (tratado como inexistente)', async () => {
+      const admin = await signupAdmin(ctx.app, ctx.database);
+      const puro = await signupAdminInterno(ctx.app);
+
+      const res = await injectComo(ctx.app, admin, {
+        method: 'GET',
+        url: `${BASE}/tenants/${puro.tenantId}`,
+      });
+      expect(res.statusCode).toBe(404);
+    });
+  });
+
+  describe('POST /admin/usuarios/:id/redefinir-senha', () => {
+    it('gera senha nova, invalida a antiga, exige troca no próximo login e revoga sessões', async () => {
+      const admin = await signupAdmin(ctx.app, ctx.database);
+      const alvo = await signupTenant(ctx.app);
+
+      const res = await injectComo(ctx.app, admin, {
+        method: 'POST',
+        url: `${BASE}/usuarios/${alvo.userId}/redefinir-senha`,
+      });
+      expect(res.statusCode).toBe(200);
+      const novaSenha = res.json<{ data: { senha: string } }>().data.senha;
+      expect(novaSenha).not.toBe(alvo.senha);
+
+      const loginSenhaAntiga = await ctx.app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/login',
+        payload: { email: alvo.email, senha: alvo.senha },
+      });
+      expect(loginSenhaAntiga.statusCode).toBe(401);
+
+      const loginSenhaNova = await ctx.app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/login',
+        payload: { email: alvo.email, senha: novaSenha },
+      });
+      expect(loginSenhaNova.statusCode).toBe(200);
+      expect(
+        loginSenhaNova.json<{ user: { deveTrocarSenha: boolean } }>().user.deveTrocarSenha,
+      ).toBe(true);
+
+      const refreshAntigo = await ctx.app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/refresh',
+        cookies: { refresh_token: alvo.cookies.refresh_token ?? '' },
+      });
+      expect(refreshAntigo.statusCode).toBe(401);
+    });
+
+    it('admin não pode redefinir a própria senha por esta rota (422)', async () => {
+      const admin = await signupAdmin(ctx.app, ctx.database);
+      const res = await injectComo(ctx.app, admin, {
+        method: 'POST',
+        url: `${BASE}/usuarios/${admin.userId}/redefinir-senha`,
+      });
+      expect(res.statusCode).toBe(422);
+    });
+
+    it('404 para usuário inexistente', async () => {
+      const admin = await signupAdmin(ctx.app, ctx.database);
+      const res = await injectComo(ctx.app, admin, {
+        method: 'POST',
+        url: `${BASE}/usuarios/00000000-0000-4000-8000-000000000000/redefinir-senha`,
+      });
+      expect(res.statusCode).toBe(404);
     });
   });
 });

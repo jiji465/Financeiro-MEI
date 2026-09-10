@@ -1,12 +1,15 @@
 // Chamadas HTTP do painel de administrador (contratos em @meifin/shared/schemas/admin).
 import type {
   AdminTenantDto,
+  AdminTenantResponse,
   AtualizarSolicitacaoBody,
   AtualizarTenantBody,
   AtualizarUsuarioAdminBody,
+  CriarAdministradorBody,
   CriarContaAdminBody,
   ListaAdminTenantsResponse,
   ListaSolicitacoesResponse,
+  RedefinirSenhaResponse,
   ResumoPlataformaResponse,
   SolicitacaoDto,
   StatusSolicitacao,
@@ -31,6 +34,7 @@ export const adminApi = {
   resumo: () => api.get<ResumoPlataformaResponse>('/admin/resumo'),
   listarTenants: (params: ListarTenantsParams = {}) =>
     api.get<ListaAdminTenantsResponse>('/admin/tenants', { query: { ...params } }),
+  buscarTenant: (id: string) => api.get<AdminTenantResponse>(`/admin/tenants/${id}`),
   atualizarTenant: (id: string, body: AtualizarTenantBody) =>
     api.patch<{ data: AdminTenantDto }>(`/admin/tenants/${id}`, body),
   atualizarUsuario: (id: string, body: AtualizarUsuarioAdminBody) =>
@@ -44,4 +48,8 @@ export const adminApi = {
     api.patch<{ data: SolicitacaoDto }>(`/admin/solicitacoes/${id}`, body),
   criarConta: (body: CriarContaAdminBody) =>
     api.post<{ data: { user: { email: string } } }>('/admin/contas', body),
+  criarAdministrador: (body: CriarAdministradorBody) =>
+    api.post<{ data: { user: { email: string } } }>('/admin/administradores', body),
+  redefinirSenha: (id: string) =>
+    api.post<RedefinirSenhaResponse>(`/admin/usuarios/${id}/redefinir-senha`),
 };

@@ -1,6 +1,6 @@
 // Hash de senha com scrypt do node:crypto (sem dependências nativas).
 // Formato armazenado: scrypt$N$r$p$<salt base64>$<hash base64>. Comparação em tempo constante.
-import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
+import { randomBytes, randomInt, scrypt, timingSafeEqual } from 'node:crypto';
 
 const N_PADRAO = 16384;
 const R_PADRAO = 8;
@@ -46,4 +46,18 @@ export async function verificarSenha(senha: string, armazenado: string): Promise
   const calculado = await derivar(senha, salt, { N, r, p });
   if (calculado.length !== esperado.length) return false;
   return timingSafeEqual(calculado, esperado);
+}
+
+/** Alfabeto sem caracteres ambíguos (sem 0/O, 1/l/I) para senhas temporárias legíveis. */
+const ALFABETO_SENHA_TEMPORARIA = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
+
+/** Senha temporária gerada com fonte de aleatoriedade criptográfica (node:crypto), para ser
+ * entregue de verdade a uma pessoa (criação de conta ou redefinição pelo admin) — diferente da
+ * sugestão editável do formulário do frontend, que usa Math.random(). */
+export function gerarSenhaTemporaria(tamanho = 12): string {
+  let saida = '';
+  for (let i = 0; i < tamanho; i++) {
+    saida += ALFABETO_SENHA_TEMPORARIA[randomInt(ALFABETO_SENHA_TEMPORARIA.length)];
+  }
+  return saida;
 }

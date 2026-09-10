@@ -119,7 +119,15 @@ describe('refresh em 401', () => {
   it('refresh inválido limpa a sessão e propaga o 401', async () => {
     useAuthStore.getState().setSession({
       accessToken: 'velho',
-      user: { id: 'u', tenantId: 't', nome: 'x', email: 'x@x', role: 'owner', admin: false },
+      user: {
+        id: 'u',
+        tenantId: 't',
+        nome: 'x',
+        email: 'x@x',
+        role: 'owner',
+        admin: false,
+        deveTrocarSenha: false,
+      },
       tenant: {
         id: 't',
         nome: 'x',
@@ -128,6 +136,7 @@ describe('refresh em 401', () => {
         atividade: 'servicos',
         caminhoneiroTributos: null,
         dataAbertura: null,
+        interno: false,
       },
     });
     mockFetch([

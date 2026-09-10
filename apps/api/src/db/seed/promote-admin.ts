@@ -1,10 +1,10 @@
-// Bootstrap do primeiro administrador (seção 11 do plano). Cadastro público não existe mais, então
-// esta é a única forma de criar/promover uma conta de admin: rodar manualmente contra o banco.
-//   pnpm db:promote-admin -- --email=voce@exemplo.com --senha=... --nome="Seu Nome" --atividade=servicos
-// Se o e-mail já existir, só liga o flag admin (não exige --senha/--nome/--atividade nesse caso).
-import type { Atividade } from '@meifin/shared';
-import { ATIVIDADES } from '@meifin/shared';
-
+// Bootstrap do primeiro administrador (seção 11/13 do plano). Cadastro público não existe mais,
+// então esta é a única forma de criar/promover uma conta de admin fora do painel (que só um admin
+// já existente pode usar): rodar manualmente contra o banco.
+//   pnpm db:promote-admin -- --email=voce@exemplo.com --senha=... --nome="Seu Nome"
+// Se o e-mail já existir, só liga o flag admin (não exige --senha/--nome nesse caso). Um admin
+// criado do zero por aqui é sempre um "administrador puro" — não é titular de nenhum MEI de
+// verdade (seção 13: tenant interno, oculto de toda listagem/estatística do painel).
 import { createDb } from '../index.js';
 import * as authRepo from '../../modules/auth/repository.js';
 import { criarAuthService } from '../../modules/auth/service.js';
@@ -21,7 +21,7 @@ async function main() {
   const email = argumento('email')?.trim().toLowerCase();
   if (!email) {
     console.error(
-      'Uso: pnpm db:promote-admin -- --email=voce@exemplo.com [--senha=... --nome="Seu Nome" --atividade=servicos]',
+      'Uso: pnpm db:promote-admin -- --email=voce@exemplo.com [--senha=... --nome="Seu Nome"]',
     );
     process.exit(1);
   }
@@ -43,16 +43,10 @@ async function main() {
 
     const senha = argumento('senha');
     const nome = argumento('nome');
-    const atividade = argumento('atividade') as Atividade | undefined;
-    if (!senha || !nome || !atividade) {
+    if (!senha || !nome) {
       console.error(
-        `Usuário ${email} não existe ainda. Para criar, informe também --senha, --nome e --atividade` +
-          ` (uma de: ${ATIVIDADES.join(', ')}).`,
+        `Usuário ${email} não existe ainda. Para criar, informe também --senha e --nome.`,
       );
-      process.exit(1);
-    }
-    if (!ATIVIDADES.includes(atividade)) {
-      console.error(`Atividade inválida: "${atividade}". Use uma de: ${ATIVIDADES.join(', ')}.`);
       process.exit(1);
     }
 
@@ -62,17 +56,7 @@ async function main() {
       mailer: { enviar: async () => {} },
       sign: () => '',
     });
-    const resultado = await authService.signup(
-      {
-        nome,
-        email,
-        senha,
-        atividade,
-        caminhoneiroTributos: atividade === 'caminhoneiro' ? 'ambos' : undefined,
-      },
-      {},
-      { admin: true },
-    );
+    const resultado = await authService.criarAdminInterno({ nome, email, senha });
     console.log(`Conta criada e promovida a administrador: ${resultado.user.email}`);
   } finally {
     await database.close();

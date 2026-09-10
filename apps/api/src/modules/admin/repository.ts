@@ -28,6 +28,9 @@ export async function listarTenants(
   opcoes: ListarTenantsOpcoes,
 ): Promise<{ linhas: TenantComResumo[]; total: number }> {
   const condicoes = [
+    // Sempre presente, independente dos demais filtros: tenant interno (de administrador puro)
+    // nunca é um MEI de verdade e nunca deve aparecer nesta listagem.
+    eq(tenants.interno, false),
     opcoes.ativo !== undefined ? eq(tenants.ativo, opcoes.ativo) : undefined,
     opcoes.busca
       ? or(
@@ -36,7 +39,7 @@ export async function listarTenants(
         )
       : undefined,
   ].filter((c): c is NonNullable<typeof c> => c !== undefined);
-  const condicao = condicoes.length > 0 ? and(...condicoes) : undefined;
+  const condicao = and(...condicoes);
 
   const [linhasTenant, contagem] = await Promise.all([
     exec
@@ -82,7 +85,9 @@ export async function buscarTenantComUsuarios(
   tenantId: string,
 ): Promise<{ tenant: TenantRow; usuarios: UserRow[] } | null> {
   const [tenant] = await exec.select().from(tenants).where(eq(tenants.id, tenantId)).limit(1);
-  if (!tenant) return null;
+  // Tenant interno (de administrador puro) é tratado como inexistente para o admin — fecha o
+  // acesso por UUID direto, além de nunca aparecer em nenhuma listagem.
+  if (!tenant || tenant.interno) return null;
   const usuarios = await exec
     .select()
     .from(users)
@@ -104,7 +109,7 @@ export async function definirAtivoTenant(
   const [linha] = await exec
     .update(tenants)
     .set({ ativo, updatedAt: sql`now()` })
-    .where(eq(tenants.id, tenantId))
+    .where(and(eq(tenants.id, tenantId), eq(tenants.interno, false)))
     .returning();
   return linha ?? null;
 }
@@ -133,18 +138,27 @@ export interface ResumoPlataforma {
 
 export async function resumoPlataforma(exec: DbExecutor): Promise<ResumoPlataforma> {
   const ha30Dias = new Date(Date.now() - 30 * 86_400_000).toISOString();
+  // Tenants internos (administradores puros) nunca contam como MEI/usuário real nestes números.
+  const naoInterno = eq(tenants.interno, false);
   const [rTotalTenants, rTotalUsuarios, rTenantsAtivos, rCadastros30d, rSolicitacoesPendentes] =
     await Promise.all([
-      exec.select({ n: sql<number>`count(*)::int` }).from(tenants),
-      exec.select({ n: sql<number>`count(*)::int` }).from(users),
       exec
         .select({ n: sql<number>`count(*)::int` })
         .from(tenants)
-        .where(eq(tenants.ativo, true)),
+        .where(naoInterno),
+      exec
+        .select({ n: sql<number>`count(*)::int` })
+        .from(users)
+        .innerJoin(tenants, eq(users.tenantId, tenants.id))
+        .where(naoInterno),
       exec
         .select({ n: sql<number>`count(*)::int` })
         .from(tenants)
-        .where(gte(tenants.createdAt, ha30Dias)),
+        .where(and(naoInterno, eq(tenants.ativo, true))),
+      exec
+        .select({ n: sql<number>`count(*)::int` })
+        .from(tenants)
+        .where(and(naoInterno, gte(tenants.createdAt, ha30Dias))),
       exec
         .select({ n: sql<number>`count(*)::int` })
         .from(solicitacoesAcesso)

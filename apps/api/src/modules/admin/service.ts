@@ -1,6 +1,11 @@
 // Regras do painel de administrador (seção 11 do plano). Sem acesso a lançamentos/saldo/
 // faturamento de nenhum tenant — só dados de conta.
-import type { AtualizarSolicitacaoBody, AuthUser, CriarContaAdminBody } from '@meifin/shared';
+import type {
+  AtualizarSolicitacaoBody,
+  AuthUser,
+  CriarAdministradorBody,
+  CriarContaAdminBody,
+} from '@meifin/shared';
 
 import type { Env } from '../../config/env.js';
 import type { Database } from '../../db/index.js';
@@ -78,11 +83,33 @@ export function criarAdminService(deps: AdminDeps) {
     meta: SessaoMeta,
   ): Promise<{ user: AuthUser }> {
     const { solicitacaoId, ...corpo } = input;
-    const resultado = await authService.signup(corpo, meta, { admin: false });
+    // A senha inicial foi definida pelo admin, não pela própria pessoa: exige troca no 1º login.
+    const resultado = await authService.signup(corpo, meta, {
+      admin: false,
+      deveTrocarSenha: true,
+    });
     if (solicitacaoId) {
       await solicitacoesRepo.atualizar(db, solicitacaoId, { status: 'aprovada' });
     }
     return { user: resultado.user };
+  }
+
+  /** Cria outro administrador puro direto pelo painel — sem precisar de terminal/CLI. */
+  async function criarAdministrador(input: CriarAdministradorBody): Promise<{ user: AuthUser }> {
+    return authService.criarAdminInterno(input);
+  }
+
+  /** Gera uma nova senha temporária para o usuário e devolve em claro, uma única vez.
+   * `null` quando o usuário não existe. */
+  async function redefinirSenha(userId: string, quemPediu: string): Promise<string | null> {
+    const usuario = await repo.buscarUsuarioPorId(db, userId);
+    if (!usuario) return null;
+    if (userId === quemPediu) {
+      throw new UnprocessableError(
+        'Use "Alterar senha" em Configurações para trocar a sua própria senha',
+      );
+    }
+    return authService.redefinirSenhaAdmin(userId);
   }
 
   return {
@@ -94,6 +121,8 @@ export function criarAdminService(deps: AdminDeps) {
     listarSolicitacoes,
     atualizarSolicitacao,
     criarConta,
+    criarAdministrador,
+    redefinirSenha,
   };
 }
 

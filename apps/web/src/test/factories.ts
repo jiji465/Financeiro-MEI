@@ -18,6 +18,7 @@ export function criarUser(sobrescrever: Partial<AuthUser> = {}): AuthUser {
     email: 'maria@exemplo.com.br',
     role: 'owner',
     admin: false,
+    deveTrocarSenha: false,
     ...sobrescrever,
   };
 }
@@ -31,6 +32,7 @@ export function criarTenant(sobrescrever: Partial<AuthTenant> = {}): AuthTenant 
     atividade: 'comercio',
     caminhoneiroTributos: null,
     dataAbertura: '2024-03-15',
+    interno: false,
     ...sobrescrever,
   };
 }

@@ -195,6 +195,56 @@ export async function signupAdmin(
   };
 }
 
+/**
+ * Cria um administrador puro (tenant interno, sem MEI de verdade — seção 13 do plano) via
+ * `authService.criarAdminInterno`, sem passar por HTTP, e faz login de verdade. Diferente de
+ * `signupAdmin` (que promove o titular de um MEI real — admin híbrido), este representa um
+ * administrador que só usa o painel.
+ */
+export async function signupAdminInterno(
+  app: FastifyInstance,
+  overrides: { nome?: string; email?: string; senha?: string } = {},
+): Promise<TenantSession> {
+  contadorSignup += 1;
+  const senha = overrides.senha ?? 'Senha@12345';
+  const email = overrides.email ?? `admin${contadorSignup}-${randomUUID().slice(0, 8)}@teste.com`;
+  const nome = overrides.nome ?? `Admin Teste ${contadorSignup}`;
+  const service = criarAuthService({
+    database: app.database,
+    env: app.env,
+    mailer: app.mailer,
+    sign: (p) => app.jwt.sign(p),
+  });
+  await service.criarAdminInterno({ nome, email, senha });
+
+  const login = await app.inject({
+    method: 'POST',
+    url: '/api/v1/auth/login',
+    payload: { email, senha },
+  });
+  if (login.statusCode !== 200) {
+    throw new Error(
+      `signupAdminInterno: login pós-criação falhou (${login.statusCode}): ${login.body}`,
+    );
+  }
+  const corpo = login.json<{
+    accessToken: string;
+    user: TenantSession['user'];
+    tenant: TenantSession['tenant'];
+  }>();
+  return {
+    accessToken: corpo.accessToken,
+    tenantId: corpo.tenant.id,
+    userId: corpo.user.id,
+    email,
+    senha,
+    cookies: cookiesDe(login),
+    headers: { authorization: `Bearer ${corpo.accessToken}` },
+    user: corpo.user,
+    tenant: corpo.tenant,
+  };
+}
+
 /** app.inject já autenticado como a sessão informada. */
 export function injectComo(
   app: FastifyInstance,

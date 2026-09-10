@@ -26,7 +26,8 @@ export function Topbar() {
   const tenant = useAuthStore((s) => s.tenant);
   const logout = useLogout();
   const atual = itemDaRota(pathname);
-  const temConfiguracoes = navItems.some((i) => i.to === '/configuracoes');
+  const interno = tenant?.interno ?? false;
+  const temConfiguracoes = !interno && navItems.some((i) => i.to === '/configuracoes');
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-borda bg-superficie/95 px-4 backdrop-blur md:h-16 md:px-6">
@@ -41,24 +42,26 @@ export function Topbar() {
       </p>
 
       <div className="ml-auto flex items-center gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button className="hidden md:inline-flex" icon={<Plus aria-hidden="true" />}>
-              Novo lançamento
-              <ChevronDown className="-mr-1 opacity-70" aria-hidden="true" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => navigate('/lancamentos?novo=receita')}>
-              <TrendingUp className="text-receita-600!" />
-              Nova receita
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => navigate('/lancamentos?novo=despesa')}>
-              <TrendingDown className="text-despesa-600!" />
-              Nova despesa
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {interno ? null : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="hidden md:inline-flex" icon={<Plus aria-hidden="true" />}>
+                Novo lançamento
+                <ChevronDown className="-mr-1 opacity-70" aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => navigate('/lancamentos?novo=receita')}>
+                <TrendingUp className="text-receita-600!" />
+                Nova receita
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => navigate('/lancamentos?novo=despesa')}>
+                <TrendingDown className="text-despesa-600!" />
+                Nova despesa
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -85,7 +88,7 @@ export function Topbar() {
               <span className="block truncate text-xs font-normal text-zinc-500">
                 {user?.email}
               </span>
-              {tenant ? (
+              {tenant && !interno ? (
                 <span className="block truncate text-xs font-normal text-zinc-500">
                   {tenant.nomeFantasia || tenant.nome}
                 </span>

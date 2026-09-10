@@ -8,7 +8,7 @@ import { useAuthStore } from '@/features/auth/store';
 import { cn } from '@/lib/utils/cn';
 
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../ui/sheet';
-import { bottomNavSlots, filtrarPorAdmin, itensMais, rotaAtiva } from './nav';
+import { bottomNavSlots, filtrarNav, itensMais, rotaAtiva } from './nav';
 
 const itemClass =
   'flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium text-zinc-500 transition-colors [&_svg]:size-5';
@@ -19,9 +19,10 @@ export function BottomNav() {
   const [maisAberto, setMaisAberto] = useState(false);
   const { pathname } = useLocation();
   const user = useAuthStore((s) => s.user);
-  const itensVisiveis = filtrarPorAdmin(navItems, user?.admin ?? false);
-  const slots = bottomNavSlots(itensVisiveis);
-  const restantes = itensMais(itensVisiveis);
+  const interno = useAuthStore((s) => s.tenant?.interno ?? false);
+  const itensVisiveis = filtrarNav(navItems, { admin: user?.admin ?? false, interno });
+  const slots = bottomNavSlots(itensVisiveis, { semPadrao: interno });
+  const restantes = itensMais(itensVisiveis, { semPadrao: interno });
   const logout = useLogout();
   const algumRestanteAtivo = restantes.some((i) => rotaAtiva(i.to, pathname));
 

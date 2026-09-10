@@ -2,17 +2,23 @@ import { Plus, TrendingDown, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 
+import { useAuthStore } from '@/features/auth/store';
+
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../ui/sheet';
 
-/** Botão flutuante "+" do mobile: abre a folha "Nova receita / Nova despesa". */
+/** Botão flutuante "+" do mobile: abre a folha "Nova receita / Nova despesa". Some para um
+ * administrador puro (tenant interno, sem MEI de verdade — seção 13 do plano). */
 export function Fab() {
   const [aberto, setAberto] = useState(false);
   const navigate = useNavigate();
+  const interno = useAuthStore((s) => s.tenant?.interno ?? false);
 
   const ir = (tipo: 'receita' | 'despesa') => {
     setAberto(false);
     navigate(`/lancamentos?novo=${tipo}`);
   };
+
+  if (interno) return null;
 
   return (
     <>

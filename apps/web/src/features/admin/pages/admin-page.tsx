@@ -3,7 +3,7 @@
 import type { AdminTenantDto, SolicitacaoDto, StatusSolicitacao } from '@meifin/shared';
 import { LABEL_STATUS_SOLICITACAO } from '@meifin/shared';
 import { useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatData } from '@/lib/format/date';
 import { ATIVIDADE_LABELS } from '@/lib/labels';
 
+import { CriarAdministradorDialog } from '../components/criar-administrador-dialog';
 import { CriarContaDialog } from '../components/criar-conta-dialog';
 import { RequireAdmin } from '../require-admin';
 import {
@@ -160,8 +161,15 @@ function SolicitacoesTab({ onCriarConta }: { onCriarConta: (s: SolicitacaoDto) =
   );
 }
 
-function ContasTab({ onNovaConta }: { onNovaConta: () => void }) {
+function ContasTab({
+  onNovaConta,
+  onNovoAdministrador,
+}: {
+  onNovaConta: () => void;
+  onNovoAdministrador: () => void;
+}) {
   const [busca, setBusca] = useState('');
+  const navigate = useNavigate();
   const { data, isLoading, isError, error, refetch } = useAdminTenants({
     busca: busca || undefined,
     pageSize: 100,
@@ -217,7 +225,12 @@ function ContasTab({ onNovaConta }: { onNovaConta: () => void }) {
           aria-label="Buscar MEI"
           className="h-10 w-full rounded-md border border-borda bg-superficie px-3 text-sm sm:max-w-xs"
         />
-        <Button onClick={onNovaConta}>Nova conta</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onNovoAdministrador}>
+            Novo administrador
+          </Button>
+          <Button onClick={onNovaConta}>Nova conta</Button>
+        </div>
       </div>
       <DataTable
         columns={colunas}
@@ -227,6 +240,7 @@ function ContasTab({ onNovaConta }: { onNovaConta: () => void }) {
         isError={isError}
         error={error}
         onRetry={() => void refetch()}
+        onRowClick={(t) => navigate(`/admin/contas/${t.id}`)}
         empty={
           <p className="p-6 text-center text-sm text-zinc-500">Nenhum MEI cadastrado ainda.</p>
         }
@@ -282,6 +296,7 @@ function AdminPageConteudo() {
   const [params, setParams] = useSearchParams();
   const aba = params.get('aba') ?? 'resumo';
   const [dialogo, setDialogo] = useState<{ solicitacao?: SolicitacaoDto } | null>(null);
+  const [dialogoAdminAberto, setDialogoAdminAberto] = useState(false);
 
   return (
     <div>
@@ -302,9 +317,14 @@ function AdminPageConteudo() {
           <SolicitacoesTab onCriarConta={(s) => setDialogo({ solicitacao: s })} />
         </TabsContent>
         <TabsContent value="contas">
-          <ContasTab onNovaConta={() => setDialogo({})} />
+          <ContasTab
+            onNovaConta={() => setDialogo({})}
+            onNovoAdministrador={() => setDialogoAdminAberto(true)}
+          />
         </TabsContent>
       </Tabs>
+
+      <CriarAdministradorDialog open={dialogoAdminAberto} onOpenChange={setDialogoAdminAberto} />
 
       <CriarContaDialog
         key={dialogo?.solicitacao?.id ?? 'nova'}

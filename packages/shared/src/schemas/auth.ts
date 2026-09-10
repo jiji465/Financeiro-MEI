@@ -66,6 +66,9 @@ export const authUser = z.object({
   role: z.enum(USER_ROLES),
   /** Administrador da plataforma (não confundir com `role`, que é o papel dentro do próprio tenant). */
   admin: z.boolean(),
+  /** true quando a senha atual foi definida por um admin — o frontend deve bloquear a navegação
+   * até a pessoa trocar a senha. */
+  deveTrocarSenha: z.boolean(),
 });
 export type AuthUser = z.infer<typeof authUser>;
 
@@ -77,6 +80,9 @@ export const authTenant = z.object({
   atividade: z.enum(ATIVIDADES),
   caminhoneiroTributos: z.enum(CAMINHONEIRO_TRIBUTOS).nullable(),
   dataAbertura: isoDate.nullable(),
+  /** Tenant técnico de um administrador puro (nunca um MEI de verdade) — o frontend deve
+   * esconder toda navegação de MEI e mandar a pessoa direto para /admin. */
+  interno: z.boolean(),
 });
 export type AuthTenant = z.infer<typeof authTenant>;
 

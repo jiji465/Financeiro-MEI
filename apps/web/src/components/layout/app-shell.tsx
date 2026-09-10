@@ -2,6 +2,9 @@
 import { Suspense, useState } from 'react';
 import { Outlet } from 'react-router';
 
+import { TrocarSenhaObrigatoria } from '@/features/auth/components/trocar-senha-obrigatoria';
+import { useAuthStore } from '@/features/auth/store';
+
 import { OfflineBanner } from '../ui/offline-banner';
 import { PageSkeleton } from '../ui/skeleton';
 import { BottomNav } from './bottom-nav';
@@ -21,6 +24,7 @@ function lerRecolhida(): boolean {
 
 export function AppShell() {
   const [recolhida, setRecolhida] = useState(lerRecolhida);
+  const deveTrocarSenha = useAuthStore((s) => s.user?.deveTrocarSenha ?? false);
 
   const alternar = () => {
     setRecolhida((atual) => {
@@ -33,6 +37,8 @@ export function AppShell() {
       return proximo;
     });
   };
+
+  if (deveTrocarSenha) return <TrocarSenhaObrigatoria />;
 
   return (
     <div className="flex min-h-dvh">

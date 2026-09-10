@@ -11,6 +11,12 @@ export const adminModule: AppModule = {
       path: '/admin',
       lazy: async () => ({ Component: (await import('./pages/admin-page')).AdminPage }),
     },
+    {
+      path: '/admin/contas/:id',
+      lazy: async () => ({
+        Component: (await import('./pages/tenant-detalhe-page')).TenantDetalhePage,
+      }),
+    },
   ],
   nav: [
     {

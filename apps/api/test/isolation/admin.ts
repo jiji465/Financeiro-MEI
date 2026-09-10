@@ -11,6 +11,7 @@ export const recursos: RecursoIsolamento[] = [
       'GET /api/v1/admin/tenants/:id',
       'PATCH /api/v1/admin/tenants/:id',
       'PATCH /api/v1/admin/usuarios/:id',
+      'POST /api/v1/admin/usuarios/:id/redefinir-senha',
       'PATCH /api/v1/admin/solicitacoes/:id',
     ],
     async preparar(_app, a) {
@@ -37,6 +38,14 @@ export const recursos: RecursoIsolamento[] = [
           method: 'PATCH',
           url: `/api/v1/admin/usuarios/${ids.userId}`,
           payload: { ativo: false },
+        }),
+        status: [403],
+      },
+      {
+        nome: 'POST /admin/usuarios/:id/redefinir-senha sem ser admin → 403',
+        requisicao: (ids) => ({
+          method: 'POST',
+          url: `/api/v1/admin/usuarios/${ids.userId}/redefinir-senha`,
         }),
         status: [403],
       },

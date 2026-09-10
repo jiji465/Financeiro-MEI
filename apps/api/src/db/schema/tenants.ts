@@ -42,6 +42,9 @@ export const tenants = pgTable(
     telefone: text('telefone'),
     endereco: jsonb('endereco').$type<EnderecoJson>(),
     ativo: boolean('ativo').notNull().default(true),
+    /** Tenant técnico criado só para um administrador puro existir (nunca é um MEI de verdade) —
+     * excluído de toda listagem/estatística do painel admin. Nunca reaproveitar para outro fim. */
+    interno: boolean('interno').notNull().default(false),
     ...timestamps(),
   },
   (t) => [unique('tenants_cnpj_unique').on(t.cnpj)],

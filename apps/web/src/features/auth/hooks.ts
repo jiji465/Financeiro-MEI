@@ -80,6 +80,20 @@ export function useResetPassword() {
   return useMutation({ mutationFn: authApi.resetPassword, meta: { silent: true } });
 }
 
+/** Depois de trocar a senha, atualiza o token e refaz /auth/me para zerar `deveTrocarSenha`
+ * (a troca obrigatória de senha, quando o admin definiu a senha, depende desse campo). */
 export function useChangePassword() {
-  return useMutation({ mutationFn: authApi.changePassword, meta: { silent: true } });
+  const setAccessToken = useAuthStore((s) => s.setAccessToken);
+  const setUsuario = useAuthStore((s) => s.setUsuario);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: authApi.changePassword,
+    onSuccess: async ({ accessToken }) => {
+      setAccessToken(accessToken);
+      const { data } = await authApi.me();
+      setUsuario(data);
+      await queryClient.invalidateQueries({ queryKey: authKeys.me() });
+    },
+    meta: { silent: true },
+  });
 }

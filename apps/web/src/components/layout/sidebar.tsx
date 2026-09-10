@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils/cn';
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { BrandMark } from './brand';
-import { agruparNav, filtrarPorAdmin } from './nav';
+import { agruparNav, filtrarNav } from './nav';
 
 export interface SidebarProps {
   collapsed: boolean;
@@ -22,7 +22,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const tenant = useAuthStore((s) => s.tenant);
   const logout = useLogout();
   const admin = useAuthStore((s) => s.user?.admin ?? false);
-  const grupos = agruparNav(filtrarPorAdmin(navItems, admin));
+  const interno = useAuthStore((s) => s.tenant?.interno ?? false);
+  const grupos = agruparNav(filtrarNav(navItems, { admin, interno }));
 
   return (
     <aside
@@ -102,7 +103,9 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             <span className="min-w-0">
               <span className="block truncate text-sm font-medium">{user.nome}</span>
               <span className="block truncate text-xs text-zinc-500">
-                {tenant?.nomeFantasia || tenant?.nome || user.email}
+                {tenant?.interno
+                  ? 'Administrador'
+                  : tenant?.nomeFantasia || tenant?.nome || user.email}
               </span>
             </span>
           </div>

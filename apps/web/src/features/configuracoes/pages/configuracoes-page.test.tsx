@@ -94,7 +94,17 @@ describe('ConfiguracoesPage', () => {
 
   it('altera a senha e mostra a confirmação', async () => {
     const fetchMock = mockRotasBase();
-    fetchMock.rota({ method: 'PATCH', path: '/api/v1/auth/me/senha', status: 204 });
+    fetchMock.rota({
+      method: 'PATCH',
+      path: '/api/v1/auth/me/senha',
+      body: { accessToken: 'novo-token' },
+    });
+    // useChangePassword refaz /auth/me para zerar deveTrocarSenha no store.
+    fetchMock.rota({
+      method: 'GET',
+      path: '/api/v1/auth/me',
+      body: { data: { user: criarUser(), tenant: criarTenant() } },
+    });
 
     const { user } = renderWithProviders(<ConfiguracoesPage />, { route: '/configuracoes' });
     await user.click(await screen.findByRole('tab', { name: 'Conta' }));

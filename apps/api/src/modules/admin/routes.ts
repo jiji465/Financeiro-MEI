@@ -9,6 +9,7 @@ import {
   atualizarTenantBody,
   atualizarUsuarioAdminBody,
   authResponse,
+  criarAdministradorBody,
   criarContaAdminBody,
   errorResponse,
   idParam,
@@ -17,6 +18,7 @@ import {
   listaSolicitacoesResponse,
   listarSolicitacoesQuery,
   listarTenantsQuery,
+  redefinirSenhaResponse,
   resumoPlataformaResponse,
   type SolicitacaoDto,
   solicitacaoResponse,
@@ -40,6 +42,7 @@ function toAdminUsuarioDto(u: UserRow): AdminUsuarioDto {
     email: u.email,
     admin: u.admin,
     ativo: u.ativo,
+    deveTrocarSenha: u.deveTrocarSenha,
     ultimoLoginAt: u.ultimoLoginAt,
     createdAt: u.createdAt,
   };
@@ -247,6 +250,42 @@ export const adminRoutes: FastifyPluginAsyncZod = async (app) => {
         ip: request.ip,
       });
       return reply.status(201).send({ data: resultado });
+    },
+  );
+
+  app.post(
+    '/administradores',
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Cria outro administrador puro (sem MEI), sem precisar de terminal',
+        body: criarAdministradorBody,
+        response: {
+          201: itemResponse(z.object({ user: authResponse.shape.user })),
+          409: errorResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const resultado = await service.criarAdministrador(request.body);
+      return reply.status(201).send({ data: resultado });
+    },
+  );
+
+  app.post(
+    '/usuarios/:id/redefinir-senha',
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Gera uma nova senha temporária para o usuário e revoga as sessões dele',
+        params: idParam,
+        response: { 200: redefinirSenhaResponse, 404: errorResponse, 422: errorResponse },
+      },
+    },
+    async (request) => {
+      const senha = await service.redefinirSenha(request.params.id, request.user.sub);
+      if (senha === null) throw new NotFoundError('Usuário não encontrado');
+      return { data: { senha } };
     },
   );
 };
