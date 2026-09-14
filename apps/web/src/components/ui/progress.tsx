@@ -1,5 +1,5 @@
 import * as ProgressPrimitive from '@radix-ui/react-progress';
-import { type ComponentProps } from 'react';
+import { type ComponentProps, useEffect, useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils/cn';
 
@@ -49,6 +49,20 @@ export function Progress({
   ...props
 }: ProgressProps) {
   const pct = Math.max(0, Math.min(100, value));
+  // Nasce em 0% e anima até `pct` só no primeiro mount (efeito "enche a barra"); mudanças
+  // posteriores de valor refletem direto — a transição de largura já existente cuida de
+  // interpolar suavemente entre um valor e outro (sem voltar a 0 a cada passo de um wizard).
+  const [largura, setLargura] = useState(0);
+  const montouRef = useRef(false);
+  useEffect(() => {
+    if (!montouRef.current) {
+      montouRef.current = true;
+      const frame = requestAnimationFrame(() => setLargura(pct));
+      return () => cancelAnimationFrame(frame);
+    }
+    setLargura(pct);
+  }, [pct]);
+
   return (
     <div className={cn('w-full', markers?.some((m) => m.label) && 'pb-4')}>
       <ProgressPrimitive.Root
@@ -65,7 +79,7 @@ export function Progress({
       >
         <ProgressPrimitive.Indicator
           className={cn('h-full rounded-full transition-[width] duration-500', TONE_CLASS[tone])}
-          style={{ width: `${pct}%` }}
+          style={{ width: `${largura}%` }}
         />
         {markers?.map((m) => (
           <span
