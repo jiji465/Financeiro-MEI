@@ -19,7 +19,9 @@ export function BrandMark({ compacto, className }: { compacto?: boolean; classNa
       >
         M
       </span>
-      {compacto ? null : <span className="text-base">MEI Financeiro</span>}
+      {compacto ? null : (
+        <span className="font-display text-base font-semibold">MEI Financeiro</span>
+      )}
     </Link>
   );
 }

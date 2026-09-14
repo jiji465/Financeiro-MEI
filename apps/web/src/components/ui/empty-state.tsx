@@ -29,7 +29,7 @@ export function EmptyState({
         className,
       )}
     >
-      <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 [&_svg]:size-6">
+      <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-primary-50 text-primary-600 [&_svg]:size-6">
         {icone ?? <Inbox aria-hidden="true" />}
       </div>
       <h3 className="text-base font-semibold">{titulo}</h3>

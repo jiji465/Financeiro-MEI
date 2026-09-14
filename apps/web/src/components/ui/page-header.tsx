@@ -50,7 +50,9 @@ export function PageHeader({
             </Button>
           ) : null}
           <div className="min-w-0">
-            <h1 className="truncate text-xl font-bold tracking-tight md:text-2xl">{titulo}</h1>
+            <h1 className="truncate font-display text-xl font-semibold tracking-tight md:text-2xl">
+              {titulo}
+            </h1>
             {descricao ? <p className="mt-0.5 text-sm text-zinc-500">{descricao}</p> : null}
           </div>
         </div>

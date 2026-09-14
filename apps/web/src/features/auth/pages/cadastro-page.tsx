@@ -50,7 +50,7 @@ export function CadastroPage() {
         <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-receita-50 text-receita-700">
           <CheckCircle2 className="size-6" aria-hidden="true" />
         </div>
-        <h1 className="mt-4 text-xl font-bold tracking-tight">Pedido recebido</h1>
+        <h1 className="mt-4 font-display text-xl font-semibold tracking-tight">Pedido recebido</h1>
         <p className="mt-2 text-sm text-zinc-600">
           Obrigado! Entraremos em contato em breve para liberar seu acesso ao MEI Financeiro.
         </p>
@@ -80,7 +80,7 @@ export function CadastroPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight">Solicitar acesso</h1>
+      <h1 className="font-display text-2xl font-semibold tracking-tight">Solicitar acesso</h1>
       <p className="mt-1 text-sm text-zinc-500">
         O acesso não é aberto: preencha seus dados e entraremos em contato para liberar sua conta.
       </p>

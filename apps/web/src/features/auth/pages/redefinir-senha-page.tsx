@@ -63,7 +63,7 @@ export function RedefinirSenhaPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight">Redefinir senha</h1>
+      <h1 className="font-display text-2xl font-semibold tracking-tight">Redefinir senha</h1>
       <p className="mt-1 text-sm text-zinc-500">Escolha uma nova senha para sua conta.</p>
 
       <form className="mt-6 space-y-4" onSubmit={form.handleSubmit(onSubmit)} noValidate>

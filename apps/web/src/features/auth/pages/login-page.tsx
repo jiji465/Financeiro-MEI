@@ -35,7 +35,7 @@ export function LoginPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight">Entrar</h1>
+      <h1 className="font-display text-2xl font-semibold tracking-tight">Entrar</h1>
       <p className="mt-1 text-sm text-zinc-500">Acesse o controle financeiro do seu MEI.</p>
 
       <form className="mt-6 space-y-4" onSubmit={form.handleSubmit(onSubmit)} noValidate>
