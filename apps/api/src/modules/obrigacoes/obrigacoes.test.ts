@@ -11,6 +11,7 @@ import {
   type TestApp,
 } from '../../../test/helpers.js';
 import { lancamentos } from '../../db/schema/lancamentos.js';
+import { atualizarTenant } from '../configuracoes/repository.js';
 import { criarLancamentoInterno } from '../lancamentos/core.js';
 
 const HOJE = '2026-09-09';
@@ -61,6 +62,10 @@ describe('obrigacoes (hoje = 2026-09-09)', () => {
     ctx = await buildTestApp({}, { hoje: () => HOJE });
     servicos = await signupTenant(ctx.app, { atividade: 'servicos', dataAbertura: '2026-03-15' });
     comercio = await signupTenant(ctx.app, { atividade: 'comercio' });
+    // dataAbertura passa a ser obrigatória no cadastro (seção 14 do plano) — o helper sempre
+    // envia um valor, então simulamos aqui um tenant "legado" sem data, só para o teste de
+    // cadastro:data_abertura_ausente abaixo continuar cobrindo esse caminho.
+    await atualizarTenant(ctx.database.db, comercio.tenantId, { dataAbertura: null });
     ambos = await signupTenant(ctx.app, { atividade: 'comercio_servicos' });
     caminhoneiro = await signupTenant(ctx.app, {
       atividade: 'caminhoneiro',
@@ -181,6 +186,40 @@ describe('obrigacoes (hoje = 2026-09-09)', () => {
         quantidadeAtrasadas: 5,
       });
       expect(data.parametrosDesatualizados).toBe(false);
+    });
+
+    it('competências até "em dia até" viram histórico (nunca atrasado), sem entrar nos totais de atraso', async () => {
+      const s = await signupTenant(ctx.app, {
+        atividade: 'servicos',
+        dataAbertura: '2025-01-10',
+        emDiaAte: '2026-06',
+      });
+      const res = await injectComo(ctx.app, s, { method: 'GET', url: `${BASE}/das?ano=2026` });
+      const { data } = res.json();
+      const porComp = Object.fromEntries(
+        (data.competencias as { competencia: string; status: string; devida: boolean }[]).map(
+          (c) => [c.competencia, c],
+        ),
+      );
+      for (const comp of ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06']) {
+        expect(porComp[comp]).toMatchObject({ devida: true, status: 'historico' });
+      }
+      // Mês seguinte ao corte volta a ser avaliado normalmente.
+      expect(porComp['2026-07']).toMatchObject({ status: 'atrasado' });
+      expect(porComp['2026-08']).toMatchObject({ status: 'pendente' });
+      expect(porComp['2026-09']).toMatchObject({ status: 'pendente' });
+      expect(porComp['2026-10']).toMatchObject({ status: 'futuro' });
+      // Só a competência de julho conta como atrasada nos totais.
+      expect(data.totais).toMatchObject({ atrasado: 8605, quantidadeAtrasadas: 1 });
+      // Ainda são devidas (contam no total devido), só não são cobradas como atraso.
+      expect(data.totais.devido).toBe(9 * 8605);
+
+      const alertas = await injectComo(ctx.app, s, { method: 'GET', url: `${BASE}/alertas` });
+      const chaves = (alertas.json().data as { chave: string }[]).map((a) => a.chave);
+      for (const comp of ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06']) {
+        expect(chaves).not.toContain(`das:${comp}:atrasado`);
+      }
+      expect(chaves).toContain('das:2026-07:atrasado');
     });
 
     it('ano futuro sem parâmetros usa o fallback e marca parametrosDesatualizados', async () => {

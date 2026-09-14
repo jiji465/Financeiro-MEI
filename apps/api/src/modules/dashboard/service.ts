@@ -106,6 +106,11 @@ async function proximosVencimentos(
       const vencimento = vencimentoDas(competencia, selecionado.parametros.diaVencimentoDas);
       const status = statusDas({ competencia, vencimento, pago: false, hoje });
       if (status === 'futuro') continue;
+      // Cliente já estava em dia (pago por fora) antes de usar o sistema — não empurra um
+      // "atrasado" que o sistema não tem como conferir pro widget de próximos vencimentos. Esse
+      // widget só tem um booleano `atrasado` (sem um terceiro estado "histórico"), então o item
+      // é omitido por inteiro. Seção 14 do plano.
+      if (ctx.tenant.emDiaAte && competencia <= ctx.tenant.emDiaAte.slice(0, 7)) continue;
       if (vencimento > ate) continue;
       itens.push({
         data: vencimento,

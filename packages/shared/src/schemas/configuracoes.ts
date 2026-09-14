@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { ATIVIDADES, CAMINHONEIRO_TRIBUTOS, REGIMES_APURACAO } from '../constants.js';
 import { cnpjInput } from './auth.js';
 import {
+  competencia,
   emailOpcional,
   endereco,
   enderecoDto,
@@ -45,6 +46,9 @@ export const meiDto = z.object({
   atividade: z.enum(ATIVIDADES),
   caminhoneiroTributos: z.enum(CAMINHONEIRO_TRIBUTOS).nullable(),
   dataAbertura: isoDate.nullable(),
+  /** Até qual competência o MEI já está em dia com o DAS (pago por fora, antes de usar o
+   * sistema) — seção 14 do plano. */
+  emDiaAte: competencia.nullable(),
   emailContato: z.string().nullable(),
   telefone: z.string().nullable(),
   endereco: enderecoDto,
@@ -85,6 +89,7 @@ export const atualizarConfiguracoesBody = z
         atividade: z.enum(ATIVIDADES, { error: 'Atividade inválida' }),
         caminhoneiroTributos: z.enum(CAMINHONEIRO_TRIBUTOS).nullable(),
         dataAbertura: isoDate.nullable(),
+        emDiaAte: competencia.nullable(),
         emailContato: emailOpcional.nullable(),
         telefone: telefone.nullable(),
         endereco: endereco,

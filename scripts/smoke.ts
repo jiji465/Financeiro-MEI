@@ -57,7 +57,13 @@ export const PASSOS: Passo[] = [
         sign: (payload) => jwtSign(payload),
       });
       const signup = await authService.signup(
-        { nome: 'MEI Smoke', email, senha, atividade: 'comercio_servicos' },
+        {
+          nome: 'MEI Smoke',
+          email,
+          senha,
+          atividade: 'comercio_servicos',
+          dataAbertura: '2020-01-01',
+        },
         {},
       );
       esperar(typeof signup.accessToken === 'string', 'signup sem accessToken');

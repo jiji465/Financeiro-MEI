@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ATIVIDADES,
   CAMINHONEIRO_TRIBUTOS,
+  competencia,
   hojeSP,
   isoDate,
   type ConfiguracoesDto,
@@ -18,6 +19,7 @@ import {
   FormDateInput,
   FormInput,
   FormMaskedInput,
+  FormMonthInput,
   FormRadioCards,
   FormRootError,
   FormSelect,
@@ -55,6 +57,12 @@ const meiSchema = z
       .union([z.literal(''), isoDate])
       .optional()
       .refine((v) => !v || v <= hojeSP(), 'A data de abertura não pode ser futura'),
+    /** Até qual competência já está em dia com o DAS (pago por fora) — evita marcar como
+     * "atrasado" um histórico que o sistema não tem como conferir. */
+    emDiaAte: z
+      .union([z.literal(''), competencia])
+      .optional()
+      .refine((v) => !v || v <= hojeSP().slice(0, 7), 'Não pode ser no futuro'),
     emailContato: z.union([z.literal(''), z.email('E-mail inválido')]).optional(),
     telefone: z
       .string()
@@ -74,6 +82,10 @@ const meiSchema = z
   .refine((v) => v.atividade !== 'caminhoneiro' || v.caminhoneiroTributos !== undefined, {
     path: ['caminhoneiroTributos'],
     message: 'Informe quais tributos o caminhoneiro recolhe (ICMS, ISS ou ambos)',
+  })
+  .refine((v) => !v.emDiaAte || !v.dataAbertura || v.emDiaAte >= v.dataAbertura.slice(0, 7), {
+    path: ['emDiaAte'],
+    message: 'Não pode ser antes da abertura do MEI',
   });
 
 type MeiForm = z.input<typeof meiSchema>;
@@ -88,6 +100,7 @@ function valoresDe(config: ConfiguracoesDto): MeiForm {
     atividade: mei.atividade,
     caminhoneiroTributos: mei.caminhoneiroTributos ?? undefined,
     dataAbertura: mei.dataAbertura ?? '',
+    emDiaAte: mei.emDiaAte ?? '',
     emailContato: mei.emailContato ?? '',
     telefone: mei.telefone ?? '',
     cep: mei.endereco.cep ?? '',
@@ -124,6 +137,7 @@ export function MeiForm({ config }: { config: ConfiguracoesDto }) {
           caminhoneiroTributos:
             v.atividade === 'caminhoneiro' ? (v.caminhoneiroTributos ?? null) : null,
           dataAbertura: v.dataAbertura || null,
+          emDiaAte: v.emDiaAte || null,
           emailContato: v.emailContato || null,
           telefone: v.telefone || null,
           endereco: {
@@ -163,6 +177,14 @@ export function MeiForm({ config }: { config: ConfiguracoesDto }) {
           opcional
           max={hojeSP()}
           hint="Usada para calcular o limite proporcional no ano de abertura e as competências devidas de DAS."
+        />
+        <FormMonthInput
+          control={form.control}
+          name="emDiaAte"
+          label="Já está em dia com o DAS até qual mês?"
+          opcional
+          max={hojeSP().slice(0, 7)}
+          hint="Se já pagava por fora antes de usar o sistema, isso evita marcar esses meses como atraso."
         />
       </div>
 

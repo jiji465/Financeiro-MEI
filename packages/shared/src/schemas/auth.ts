@@ -2,7 +2,8 @@
 import { z } from 'zod';
 
 import { ATIVIDADES, CAMINHONEIRO_TRIBUTOS, USER_ROLES } from '../constants.js';
-import { isoDate, itemResponse, uuid } from './common.js';
+import { competenciaDe } from '../dates.js';
+import { competencia, isoDate, itemResponse, uuid } from './common.js';
 
 export const senha = z
   .string()
@@ -29,11 +30,19 @@ export const signupBody = z
     cnpj: cnpjInput.optional(),
     atividade: z.enum(ATIVIDADES),
     caminhoneiroTributos: z.enum(CAMINHONEIRO_TRIBUTOS).optional(),
-    dataAbertura: isoDate.optional(),
+    dataAbertura: isoDate,
+    /** Até qual competência o MEI já está em dia com o DAS (pago por fora, antes de usar o
+     * sistema) — evita marcar como "atrasado" um histórico que o sistema não tem como conferir.
+     * Seção 14 do plano. */
+    emDiaAte: competencia.optional(),
   })
   .refine((v) => v.atividade !== 'caminhoneiro' || v.caminhoneiroTributos !== undefined, {
     message: 'Informe quais tributos o caminhoneiro recolhe (ICMS, ISS ou ambos)',
     path: ['caminhoneiroTributos'],
+  })
+  .refine((v) => !v.emDiaAte || v.emDiaAte >= competenciaDe(v.dataAbertura), {
+    message: 'Não pode ser antes da abertura do MEI',
+    path: ['emDiaAte'],
   });
 export type SignupBody = z.infer<typeof signupBody>;
 

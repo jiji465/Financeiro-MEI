@@ -318,4 +318,19 @@ describe('dashboard', () => {
     expect(data.quantidadeLancamentos).toBe(0);
     expect(data.proximosVencimentos.filter((v: { tipo: string }) => v.tipo !== 'das')).toEqual([]);
   });
+
+  it('competências até "em dia até" não aparecem nos próximos vencimentos (mesmo atrasadas)', async () => {
+    const c = await signupTenant(ctx.app, {
+      atividade: 'servicos',
+      dataAbertura: '2026-06-15',
+      emDiaAte: '2026-07',
+    });
+    const res = await injectComo(ctx.app, c, { method: 'GET', url: `${URL}/resumo` });
+    expect(res.statusCode).toBe(200);
+    const das = (
+      res.json().data.proximosVencimentos as { tipo: string; competencia: string | null }[]
+    ).filter((v) => v.tipo === 'das');
+    // Jun e jul (cobertos por "em dia até") somem, mesmo já vencidos; ago (pendente) continua.
+    expect(das.map((v) => v.competencia)).toEqual(['2026-08']);
+  });
 });

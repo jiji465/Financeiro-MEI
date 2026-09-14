@@ -190,6 +190,11 @@ function calcularCompetencia({
   const pago = pagamento !== null;
   let status = statusDas({ competencia, vencimento, pago, hoje });
   if (!devida && !pago) status = competencia > competenciaDe(hoje) ? 'futuro' : 'pendente';
+  // Cliente já estava em dia (pago por fora) antes de usar o sistema: não inventa um "atrasado"
+  // que não tem como conferir — seção 14 do plano.
+  if (devida && !pago && tenant.emDiaAte && competencia <= tenant.emDiaAte.slice(0, 7)) {
+    status = 'historico';
+  }
   return {
     competencia,
     devida,
@@ -684,7 +689,7 @@ export async function listarAlertas(
     }
     if (dasAno.parametrosDesatualizados && ano === anoAtual) parametrosDesatualizados.push(ano);
     for (const c of dasAno.competencias) {
-      if (!c.devida || c.status === 'futuro') continue;
+      if (!c.devida || c.status === 'futuro' || c.status === 'historico') continue;
       das.push({
         competencia: c.competencia,
         vencimento: c.vencimento,

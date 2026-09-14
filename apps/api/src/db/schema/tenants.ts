@@ -38,6 +38,11 @@ export const tenants = pgTable(
     atividade: atividadeEnum('atividade').notNull(),
     caminhoneiroTributos: caminhoneiroTributosEnum('caminhoneiro_tributos'),
     dataAbertura: dataNegocio('data_abertura'),
+    /** Até qual competência (guardada como "AAAA-MM-01") o MEI já está em dia com o DAS — pago
+     * por fora, antes de usar o sistema. Evita marcar como "atrasado" um histórico que o sistema
+     * não tem como conferir. Nullable: sem valor, o comportamento atual (tudo cobrado desde a
+     * abertura) continua igual. Seção 14 do plano. */
+    emDiaAte: dataNegocio('em_dia_ate'),
     emailContato: text('email_contato'),
     telefone: text('telefone'),
     endereco: jsonb('endereco').$type<EnderecoJson>(),

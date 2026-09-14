@@ -2,6 +2,7 @@
 // único, categoria DAS precisa ser uma despesa do próprio tenant (senão 404). Contratos: @meifin/shared.
 import {
   type AtualizarConfiguracoesBody,
+  competenciaDe,
   type ConfiguracoesDto,
   type EnderecoDto,
   type MeiDto,
@@ -44,6 +45,7 @@ export function toMeiDto(t: TenantRow): MeiDto {
     atividade: t.atividade,
     caminhoneiroTributos: t.caminhoneiroTributos,
     dataAbertura: t.dataAbertura,
+    emDiaAte: t.emDiaAte ? t.emDiaAte.slice(0, 7) : null,
     emailContato: t.emailContato,
     telefone: t.telefone,
     endereco: toEnderecoDto(t.endereco),
@@ -134,6 +136,16 @@ export async function atualizar(
     }
   }
 
+  if (mei.emDiaAte !== undefined && mei.emDiaAte) {
+    const dataAberturaEfetiva =
+      mei.dataAbertura !== undefined ? mei.dataAbertura : atual.tenant.dataAbertura;
+    if (dataAberturaEfetiva && mei.emDiaAte < competenciaDe(dataAberturaEfetiva)) {
+      throw new UnprocessableError('Não pode ser antes da abertura do MEI', [
+        { campo: 'mei.emDiaAte', mensagem: 'Não pode ser antes da abertura do MEI' },
+      ]);
+    }
+  }
+
   if (body.categoriaDasId !== undefined) {
     const categoria = await forTenant(tx, tenantId).findByIdOrNull(categorias, body.categoriaDasId);
     if (!categoria) throw new NotFoundError('Categoria não encontrada');
@@ -149,6 +161,9 @@ export async function atualizar(
     if (mei[campo] !== undefined) valoresTenant[campo] = mei[campo];
   }
   valoresTenant.caminhoneiroTributos = tributos;
+  if (mei.emDiaAte !== undefined) {
+    valoresTenant.emDiaAte = mei.emDiaAte ? `${mei.emDiaAte}-01` : null;
+  }
 
   const valoresConfig: Record<string, unknown> = {};
   for (const campo of CAMPOS_CONFIG) {

@@ -154,6 +154,7 @@ export function criarConfiguracoes(sobrescrever: Partial<ConfiguracoesDto> = {})
       atividade: 'servicos',
       caminhoneiroTributos: null,
       dataAbertura: '2024-03-15',
+      emDiaAte: null,
       emailContato: null,
       telefone: null,
       endereco: {

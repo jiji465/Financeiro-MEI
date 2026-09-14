@@ -85,6 +85,8 @@ export interface SignupOverrides {
   atividade?: 'comercio' | 'servicos' | 'comercio_servicos' | 'caminhoneiro';
   caminhoneiroTributos?: 'icms' | 'iss' | 'ambos';
   dataAbertura?: string;
+  /** Até qual competência (AAAA-MM) o tenant já está em dia com o DAS — seção 14 do plano. */
+  emDiaAte?: string;
 }
 
 export interface TenantSession {
@@ -129,11 +131,15 @@ export async function signupTenant(
     email,
     senha,
     atividade: overrides.atividade ?? 'servicos',
+    // dataAbertura é obrigatória desde a seção 14 do plano — data bem no passado por padrão, só
+    // para não conflitar com testes que já assumem "não devida antes da abertura" em datas
+    // explícitas (esses continuam passando dataAbertura própria via overrides).
+    dataAbertura: overrides.dataAbertura ?? '2020-01-01',
     ...(overrides.cnpj ? { cnpj: overrides.cnpj } : {}),
     ...(overrides.caminhoneiroTributos
       ? { caminhoneiroTributos: overrides.caminhoneiroTributos }
       : {}),
-    ...(overrides.dataAbertura ? { dataAbertura: overrides.dataAbertura } : {}),
+    ...(overrides.emDiaAte ? { emDiaAte: overrides.emDiaAte } : {}),
   };
   const service = criarAuthService({
     database: app.database,

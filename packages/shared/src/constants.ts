@@ -68,7 +68,7 @@ export const STATUS_SOLICITACAO = ['pendente', 'aprovada', 'recusada'] as const;
 export type StatusSolicitacao = (typeof STATUS_SOLICITACAO)[number];
 
 // Enumerações calculadas (não persistidas): status do DAS, nível do limite, agrupamentos etc.
-export const STATUS_DAS = ['pago', 'pendente', 'atrasado', 'futuro'] as const;
+export const STATUS_DAS = ['pago', 'pendente', 'atrasado', 'futuro', 'historico'] as const;
 export type StatusDas = (typeof STATUS_DAS)[number];
 
 export const NIVEIS_LIMITE = ['ok', 'atencao', 'alerta', 'estourado'] as const;
@@ -233,6 +233,7 @@ export const LABEL_STATUS_DAS: Record<StatusDas, string> = {
   pendente: 'Pendente',
   atrasado: 'Atrasado',
   futuro: 'Futuro',
+  historico: 'Não registrado',
 };
 
 export const LABEL_NIVEL_LIMITE: Record<NivelLimite, string> = {

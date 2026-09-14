@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ATIVIDADES,
   CAMINHONEIRO_TRIBUTOS,
+  competencia,
   criarContaAdminBody,
   email as emailSchema,
   hojeSP,
@@ -21,6 +22,7 @@ import {
   FormDateInput,
   FormInput,
   FormMaskedInput,
+  FormMonthInput,
   FormRadioCards,
   FormRootError,
 } from '@/components/ui/form-field';
@@ -49,12 +51,22 @@ const contaSchema = z
     caminhoneiroTributos: z.enum(CAMINHONEIRO_TRIBUTOS).optional(),
     dataAbertura: z
       .union([z.literal(''), isoDate])
-      .optional()
+      .refine((v) => v !== '', 'Informe a data de abertura')
       .refine((v) => !v || v <= hojeSP(), 'A data de abertura não pode ser futura'),
+    /** Até qual competência a pessoa já está em dia com o DAS (pago por fora, antes de usar o
+     * sistema) — evita marcar como "atrasado" um histórico que não dá pra conferir. */
+    emDiaAte: z
+      .union([z.literal(''), competencia])
+      .optional()
+      .refine((v) => !v || v <= hojeSP().slice(0, 7), 'Não pode ser no futuro'),
   })
   .refine((v) => v.atividade !== 'caminhoneiro' || v.caminhoneiroTributos !== undefined, {
     path: ['caminhoneiroTributos'],
     message: 'Informe quais tributos o caminhoneiro recolhe',
+  })
+  .refine((v) => !v.emDiaAte || !v.dataAbertura || v.emDiaAte >= v.dataAbertura.slice(0, 7), {
+    path: ['emDiaAte'],
+    message: 'Não pode ser antes da abertura do MEI',
   });
 
 type ContaForm = z.input<typeof contaSchema>;
@@ -95,6 +107,7 @@ export function CriarContaDialog({ open, onOpenChange, prefill }: CriarContaDial
       atividade: (prefill?.atividade as ContaForm['atividade']) ?? undefined,
       caminhoneiroTributos: undefined,
       dataAbertura: '',
+      emDiaAte: '',
     },
   });
   const atividade = useWatch({ control: form.control, name: 'atividade' });
@@ -118,6 +131,7 @@ export function CriarContaDialog({ open, onOpenChange, prefill }: CriarContaDial
         atividade: (prefill?.atividade as ContaForm['atividade']) ?? undefined,
         caminhoneiroTributos: undefined,
         dataAbertura: '',
+        emDiaAte: '',
       });
       setSenhaCriada(null);
       setCopiado(false);
@@ -137,7 +151,8 @@ export function CriarContaDialog({ open, onOpenChange, prefill }: CriarContaDial
       atividade: valores.atividade,
       caminhoneiroTributos:
         valores.atividade === 'caminhoneiro' ? valores.caminhoneiroTributos : undefined,
-      dataAbertura: valores.dataAbertura || undefined,
+      dataAbertura: valores.dataAbertura,
+      emDiaAte: valores.emDiaAte || undefined,
       solicitacaoId: prefill?.solicitacaoId,
     });
     if (!body.success) {
@@ -218,8 +233,15 @@ export function CriarContaDialog({ open, onOpenChange, prefill }: CriarContaDial
             control={form.control}
             name="dataAbertura"
             label="Data de abertura do MEI"
-            opcional
             max={hojeSP()}
+          />
+          <FormMonthInput
+            control={form.control}
+            name="emDiaAte"
+            label="Já está em dia com o DAS até qual mês?"
+            hint="Se ela já pagava por fora antes de usar o sistema, isso evita marcar esses meses como atraso."
+            opcional
+            max={hojeSP().slice(0, 7)}
           />
           <Button type="submit" className="w-full" size="lg" loading={criar.isPending}>
             Criar conta

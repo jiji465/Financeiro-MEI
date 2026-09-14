@@ -1,0 +1,1 @@
+ALTER TABLE "tenants" ADD COLUMN "em_dia_ate" date;

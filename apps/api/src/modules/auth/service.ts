@@ -137,7 +137,8 @@ export function criarAuthService(deps: AuthDeps) {
         atividade: input.atividade,
         caminhoneiroTributos:
           input.atividade === 'caminhoneiro' ? (input.caminhoneiroTributos ?? null) : null,
-        dataAbertura: input.dataAbertura ?? null,
+        dataAbertura: input.dataAbertura,
+        emDiaAte: input.emDiaAte ? `${input.emDiaAte}-01` : null,
         emailContato: input.email,
       });
       await configRepo.inserirPadrao(tx, tenant.id);

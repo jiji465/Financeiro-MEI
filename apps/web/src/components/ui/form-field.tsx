@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils/cn';
 import { Checkbox, type CheckboxProps } from './checkbox';
 import { Combobox, type ComboboxProps } from './combobox';
 import { DateInput, type DateInputProps } from './date-input';
+import { MonthInput, type MonthInputProps } from './month-input';
 import { Input, type InputProps } from './input';
 import { Label } from './label';
 import { MaskedInput, type MaskedInputProps } from './masked-input';
@@ -295,6 +296,46 @@ export function FormMoneyInput<
           onChange={field.onChange}
           onBlur={field.onBlur}
           disabled={moneyProps.disabled ?? field.disabled}
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
+        />
+      )}
+    />
+  );
+}
+
+export function FormMonthInput<
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+>({
+  name,
+  control,
+  label,
+  hint,
+  opcional,
+  className,
+  id,
+  ...monthProps
+}: Base<TFieldValues, TName> & Omit<MonthInputProps, 'name' | 'id' | 'value' | 'onChange'>) {
+  return (
+    <FormField
+      name={name}
+      control={control}
+      label={label}
+      hint={hint}
+      opcional={opcional}
+      className={className}
+      id={id}
+      render={({ field, id: fid, invalid, describedBy }) => (
+        <MonthInput
+          {...monthProps}
+          id={fid}
+          name={field.name}
+          ref={field.ref}
+          value={field.value as string | null | undefined}
+          onChange={(v) => field.onChange(v ?? '')}
+          onBlur={field.onBlur}
+          disabled={monthProps.disabled ?? field.disabled}
           aria-invalid={invalid || undefined}
           aria-describedby={describedBy}
         />

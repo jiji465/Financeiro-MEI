@@ -75,6 +75,7 @@ describe('admin', () => {
           email: existente.email,
           senha: 'Senha@12345',
           atividade: 'comercio',
+          dataAbertura: '2024-01-10',
         },
       });
       expect(res.statusCode).toBe(409);
@@ -106,6 +107,7 @@ describe('admin', () => {
           email: 'pedro-pedido@exemplo.com',
           senha: 'Senha@12345',
           atividade: 'comercio',
+          dataAbertura: '2024-01-10',
           solicitacaoId,
         },
       });

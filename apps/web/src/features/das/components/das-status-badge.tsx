@@ -9,6 +9,9 @@ const TONE_STATUS: Record<StatusDas, BadgeTone> = {
   pendente: 'alerta',
   atrasado: 'despesa',
   futuro: 'neutral',
+  /** Competência anterior a "já está em dia até" — pode ter sido paga por fora, o sistema não
+   * tem como conferir. Nunca tratar como atraso. */
+  historico: 'outline',
 };
 
 export function DasStatusBadge({ status, devida }: { status: StatusDas; devida: boolean }) {
@@ -16,7 +19,7 @@ export function DasStatusBadge({ status, devida }: { status: StatusDas; devida: 
     return <Badge tone="outline">Não devido</Badge>;
   }
   return (
-    <Badge tone={TONE_STATUS[status]} dot={status !== 'futuro'}>
+    <Badge tone={TONE_STATUS[status]} dot={status !== 'futuro' && status !== 'historico'}>
       {LABEL_STATUS_DAS[status]}
     </Badge>
   );
