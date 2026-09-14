@@ -105,15 +105,20 @@ function rodape(doc: PdfDoc, opcoes: PdfOpcoes) {
     const y = doc.page.height - doc.page.margins.bottom + 8;
     const x = doc.page.margins.left;
     const largura = larguraUtil(doc);
-    // Sem quebra automática: escrever no rodapé não pode criar página nova.
     doc.font('Helvetica').fontSize(8).fillColor(COR_SECUNDARIA);
     const esquerda = opcoes.rodape ?? 'MEI Financeiro';
+    // O rodapé fica dentro da margem inferior (y já passa do limite de conteúdo da página) — sem
+    // zerar a margem antes, o pdfkit interpreta isso como estouro e cria uma página extra em branco
+    // só para caber o texto do rodapé.
+    const margemInferiorOriginal = doc.page.margins.bottom;
+    doc.page.margins.bottom = 0;
     doc.text(esquerda, x, y, { width: largura / 2, lineBreak: false });
     doc.text(`Página ${i + 1} de ${total}`, x + largura / 2, y, {
       width: largura / 2,
       align: 'right',
       lineBreak: false,
     });
+    doc.page.margins.bottom = margemInferiorOriginal;
   }
 }
 
@@ -223,6 +228,10 @@ export function tabelaPdf<T>(
       const w = larguras[i] ?? 0;
       doc.text(valor ?? '', x + 3, y + 4, {
         width: w - 6,
+        // Sem `height`, texto longo (ex.: nome de contato) quebra em duas linhas mesmo com
+        // lineBreak:false + ellipsis — e a segunda linha vaza por cima da linha seguinte da
+        // tabela. Travar a altura na da própria linha força o corte com reticências.
+        height: alturaLinha - 8,
         align: colunas[i]?.alinhar ?? 'left',
         lineBreak: false,
         ellipsis: true,

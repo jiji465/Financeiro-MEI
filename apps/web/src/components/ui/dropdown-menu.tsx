@@ -4,7 +4,15 @@ import { type ComponentProps } from 'react';
 
 import { cn } from '@/lib/utils/cn';
 
-export const DropdownMenu = DropdownMenuPrimitive.Root;
+/** modal=false por padrão: o padrão (true) trava o scroll do body via lock do Radix, mas deixa o
+ * `<html>` livre — rolar a página com o menu aberto (comum numa tabela) desalinha os dois, e o
+ * conteúdo "pula" quando o menu fecha, fazendo o próximo clique cair na linha errada. */
+export function DropdownMenu({
+  modal = false,
+  ...props
+}: ComponentProps<typeof DropdownMenuPrimitive.Root>) {
+  return <DropdownMenuPrimitive.Root modal={modal} {...props} />;
+}
 export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 export const DropdownMenuGroup = DropdownMenuPrimitive.Group;
 export const DropdownMenuPortal = DropdownMenuPrimitive.Portal;

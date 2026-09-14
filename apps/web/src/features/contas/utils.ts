@@ -16,6 +16,7 @@ export const GRUPOS_VENCIMENTO = [
   'sete_dias',
   'trinta_dias',
   'depois',
+  'liquidadas',
 ] as const;
 export type GrupoVencimento = (typeof GRUPOS_VENCIMENTO)[number];
 
@@ -25,9 +26,17 @@ export const GRUPO_LABELS: Record<GrupoVencimento, string> = {
   sete_dias: 'Próximos 7 dias',
   trinta_dias: 'Próximos 30 dias',
   depois: 'Depois',
+  liquidadas: 'Pagas e canceladas',
 };
 
-export function grupoDeVencimento(vencimento: IsoDate, hoje: IsoDate = hojeSP()): GrupoVencimento {
+/** Parcela paga/cancelada nunca entra num grupo de urgência por data — "Vencidas" é sobre o que
+ * ainda precisa de atenção, não um histórico do que já foi resolvido. */
+export function grupoDeVencimento(
+  vencimento: IsoDate,
+  hoje: IsoDate = hojeSP(),
+  status?: ParcelaComTituloDto['status'],
+): GrupoVencimento {
+  if (status && status !== 'aberta') return 'liquidadas';
   if (vencimento < hoje) return 'vencidas';
   if (vencimento === hoje) return 'hoje';
   if (vencimento <= addDias(hoje, 7)) return 'sete_dias';
@@ -49,7 +58,7 @@ export function agruparPorVencimento(
 ): GrupoParcelas[] {
   const mapa = new Map<GrupoVencimento, ParcelaComTituloDto[]>();
   for (const p of parcelas) {
-    const g = grupoDeVencimento(p.vencimento, hoje);
+    const g = grupoDeVencimento(p.vencimento, hoje, p.status);
     mapa.set(g, [...(mapa.get(g) ?? []), p]);
   }
   return GRUPOS_VENCIMENTO.filter((g) => mapa.has(g)).map((grupo) => {
