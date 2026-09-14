@@ -15,7 +15,7 @@ export function BrandMark({ compacto, className }: { compacto?: boolean; classNa
     >
       <span
         aria-hidden="true"
-        className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-600 text-sm font-bold text-white"
+        className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-acento-600 text-sm font-bold text-white"
       >
         M
       </span>

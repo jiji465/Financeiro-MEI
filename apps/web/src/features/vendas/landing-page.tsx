@@ -183,18 +183,12 @@ export function LandingPage() {
               Tudo que o seu MEI precisa, em um só lugar
             </h2>
             <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {RECURSOS.map(({ icone: Icone, titulo, descricao }, i) => (
+              {RECURSOS.map(({ icone: Icone, titulo, descricao }) => (
                 <div
                   key={titulo}
                   className="rounded-2xl border border-borda bg-fundo p-5 shadow-card transition-shadow hover:shadow-lg"
                 >
-                  <div
-                    className={
-                      i % 2 === 0
-                        ? 'flex size-10 items-center justify-center rounded-lg bg-primary-50 text-primary-700'
-                        : 'flex size-10 items-center justify-center rounded-lg bg-acento-50 text-acento-700'
-                    }
-                  >
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-primary-50 text-primary-700">
                     <Icone className="size-5" aria-hidden="true" />
                   </div>
                   <h3 className="mt-3 text-sm font-semibold text-texto">{titulo}</h3>

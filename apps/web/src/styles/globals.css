@@ -2,53 +2,56 @@
 
 /*
  * Design tokens do MEI Financeiro (Tailwind 4, @theme).
- * Cores em oklch. "primary" é o azul-marinho ("tinta") da marca; "acento" é o âmbar/terracota
- * usado em ações e destaques. receita/despesa/alerta são tons semânticos usados em valores,
- * badges e gráficos. Neutros usam uma escala "zinc" própria (mesmos nomes do Tailwind, viés
- * levemente quente em vez do cinza-azulado padrão).
+ * Cores em oklch. Paleta neutra-primeiro (referência: mercury.com) — "primary" é um grafite/tinta
+ * quase neutro (hue 280, chroma baixo), usado em texto e fundos escuros, não como cor decorativa
+ * espalhada; "acento" é o ÚNICO tom vivo do sistema (índigo, hue 262), reservado pra ação (botão
+ * primário, links, estado ativo). receita/despesa/alerta continuam com seu próprio significado
+ * (valores, badges) e não competem com o acento. Neutros ("zinc") seguem a mesma família fria e
+ * discreta do primary.
  */
 @theme {
   --font-sans:
     'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
     sans-serif;
-  /* Fonte de destaque (títulos): serifada, usada pra fugir do "tudo em Inter" genérico. */
-  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  /* Títulos usam a mesma Inter (sem fonte serifada/decorativa) — só um alias pra manter a
+   * classe utilitária `font-display` já usada nos componentes. */
+  --font-display: var(--font-sans);
 
-  /* Neutros (escala "zinc" própria, viés quente — hue 75 em vez do cinza-azulado padrão) */
-  --color-zinc-50: oklch(98.4% 0.002 75);
-  --color-zinc-100: oklch(96.5% 0.003 75);
-  --color-zinc-200: oklch(91% 0.004 75);
-  --color-zinc-300: oklch(83% 0.006 75);
-  --color-zinc-400: oklch(68% 0.008 75);
-  --color-zinc-500: oklch(55% 0.008 75);
-  --color-zinc-600: oklch(44% 0.008 75);
-  --color-zinc-700: oklch(35% 0.008 75);
-  --color-zinc-800: oklch(24% 0.006 75);
-  --color-zinc-900: oklch(16% 0.004 75);
+  /* Neutros (escala "zinc" própria — fria e discreta, mesma família do primary) */
+  --color-zinc-50: oklch(98.4% 0.003 280);
+  --color-zinc-100: oklch(96.5% 0.005 280);
+  --color-zinc-200: oklch(91% 0.008 280);
+  --color-zinc-300: oklch(83% 0.012 280);
+  --color-zinc-400: oklch(68% 0.016 280);
+  --color-zinc-500: oklch(55% 0.018 280);
+  --color-zinc-600: oklch(44% 0.02 280);
+  --color-zinc-700: oklch(35% 0.022 280);
+  --color-zinc-800: oklch(24% 0.02 280);
+  --color-zinc-900: oklch(16% 0.016 280);
 
-  /* Marca / primária — azul-marinho ("tinta") */
-  --color-primary-50: oklch(97.5% 0.01 235);
-  --color-primary-100: oklch(94% 0.022 235);
-  --color-primary-200: oklch(88% 0.035 235);
-  --color-primary-300: oklch(78% 0.05 235);
-  --color-primary-400: oklch(65% 0.07 235);
-  --color-primary-500: oklch(52% 0.08 235);
-  --color-primary-600: oklch(42% 0.085 235);
-  --color-primary-700: oklch(34% 0.075 235);
-  --color-primary-800: oklch(27% 0.06 235);
-  --color-primary-900: oklch(20% 0.045 235);
+  /* Marca / primária — grafite/tinta quase neutro, não uma cor "espalhada" */
+  --color-primary-50: oklch(97.8% 0.006 280);
+  --color-primary-100: oklch(95% 0.01 280);
+  --color-primary-200: oklch(89% 0.016 280);
+  --color-primary-300: oklch(80% 0.022 280);
+  --color-primary-400: oklch(67% 0.028 280);
+  --color-primary-500: oklch(54% 0.032 280);
+  --color-primary-600: oklch(43% 0.034 280);
+  --color-primary-700: oklch(34% 0.032 280);
+  --color-primary-800: oklch(25% 0.028 280);
+  --color-primary-900: oklch(17% 0.022 280);
 
-  /* Acento — âmbar/terracota, reservado pra ações e destaques (CTAs, botão primário) */
-  --color-acento-50: oklch(97% 0.025 55);
-  --color-acento-100: oklch(93% 0.06 55);
-  --color-acento-200: oklch(87% 0.1 50);
-  --color-acento-300: oklch(79% 0.14 48);
-  --color-acento-400: oklch(72% 0.17 45);
-  --color-acento-500: oklch(66% 0.17 42);
-  --color-acento-600: oklch(57% 0.17 40);
-  --color-acento-700: oklch(46% 0.15 37);
-  --color-acento-800: oklch(37% 0.12 35);
-  --color-acento-900: oklch(29% 0.09 33);
+  /* Acento — índigo, o único tom vivo do sistema (botão primário, links, estado ativo) */
+  --color-acento-50: oklch(97% 0.015 262);
+  --color-acento-100: oklch(93% 0.035 262);
+  --color-acento-200: oklch(87% 0.065 262);
+  --color-acento-300: oklch(79% 0.11 262);
+  --color-acento-400: oklch(70% 0.155 262);
+  --color-acento-500: oklch(61% 0.185 262);
+  --color-acento-600: oklch(53% 0.195 262);
+  --color-acento-700: oklch(45% 0.185 262);
+  --color-acento-800: oklch(37% 0.155 262);
+  --color-acento-900: oklch(29% 0.115 262);
 
   /* Alias mantido do bootstrap (brand === primary) */
   --color-brand-50: var(--color-primary-50);
@@ -97,15 +100,15 @@
   --color-perigo-700: var(--color-despesa-700);
   --color-perigo: var(--color-despesa-600);
 
-  /* Informativo (azul mais vívido e saturado que o primary, pra não se confundir com a marca) */
-  --color-info-50: oklch(97% 0.02 258);
-  --color-info-100: oklch(93% 0.05 258);
-  --color-info-600: oklch(56% 0.19 258);
-  --color-info-700: oklch(47% 0.18 258);
+  /* Informativo (ciano — afastado do índigo do acento pra não se confundir com ação/marca) */
+  --color-info-50: oklch(97% 0.02 210);
+  --color-info-100: oklch(93% 0.05 210);
+  --color-info-600: oklch(55% 0.14 210);
+  --color-info-700: oklch(46% 0.13 210);
   --color-info: var(--color-info-600);
 
   /* Neutros semânticos */
-  --color-fundo: oklch(98.3% 0.004 75);
+  --color-fundo: oklch(98.4% 0.003 280);
   --color-superficie: oklch(100% 0 0);
   --color-borda: var(--color-zinc-200);
   --color-texto: var(--color-zinc-900);
