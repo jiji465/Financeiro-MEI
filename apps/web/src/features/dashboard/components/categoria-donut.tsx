@@ -7,16 +7,31 @@ import { ChartContainer } from '@/components/charts/chart-container';
 import { corCategorica, useChartColors } from '@/components/charts/chart-colors';
 import { ChartTooltip } from '@/components/charts/chart-tooltip';
 import { EmptyState } from '@/components/ui/empty-state';
+import { ErrorState } from '@/components/ui/error-state';
 import { formatBRL, formatPercentual } from '@/lib/format/money';
 
 export interface CategoriaDonutProps {
   dados: PorCategoriaDto | undefined;
   loading: boolean;
+  isError?: boolean;
+  error?: unknown;
+  onRetry?: () => void;
 }
 
-export function CategoriaDonut({ dados, loading }: CategoriaDonutProps) {
+export function CategoriaDonut({ dados, loading, isError, error, onRetry }: CategoriaDonutProps) {
   const cores = useChartColors();
   const itens = dados?.itens ?? [];
+
+  if (isError) {
+    return (
+      <ErrorState
+        titulo="Não foi possível carregar as categorias"
+        error={error}
+        onRetry={onRetry}
+        compacto
+      />
+    );
+  }
 
   if (!loading && itens.length === 0) {
     return (

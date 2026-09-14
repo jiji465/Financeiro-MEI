@@ -83,8 +83,10 @@ export function ExtratoPage() {
           <ExportarBotoes
             baixandoCsv={baixar.isPending && baixar.variables?.formato === 'csv'}
             baixandoPdf={baixar.isPending && baixar.variables?.formato === 'pdf'}
+            baixandoXlsx={baixar.isPending && baixar.variables?.formato === 'xlsx'}
             onCsv={() => baixar.mutate({ formato: 'csv', query: filtros })}
             onPdf={() => baixar.mutate({ formato: 'pdf', query: filtros })}
+            onXlsx={() => baixar.mutate({ formato: 'xlsx', query: filtros })}
           />
         }
       >

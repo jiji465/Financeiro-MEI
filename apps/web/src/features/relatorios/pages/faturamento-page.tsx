@@ -67,8 +67,10 @@ export function FaturamentoPage() {
           <ExportarBotoes
             baixandoCsv={baixar.isPending && baixar.variables?.formato === 'csv'}
             baixandoPdf={baixar.isPending && baixar.variables?.formato === 'pdf'}
+            baixandoXlsx={baixar.isPending && baixar.variables?.formato === 'xlsx'}
             onCsv={() => baixar.mutate({ formato: 'csv', query: { ano } })}
             onPdf={() => baixar.mutate({ formato: 'pdf', query: { ano } })}
+            onXlsx={() => baixar.mutate({ formato: 'xlsx', query: { ano } })}
           />
         }
       >

@@ -15,6 +15,20 @@ import { criarLancamentoInterno } from '../lancamentos/core.js';
 const URL = '/api/v1/relatorios';
 const HOJE = '2026-09-15';
 
+/** Confere que a resposta é um .xlsx (zip): content-type, extensão e assinatura "PK". */
+function expectXlsx(res: {
+  statusCode: number;
+  headers: Record<string, unknown>;
+  rawPayload: Buffer;
+}) {
+  expect(res.statusCode).toBe(200);
+  expect(res.headers['content-type']).toBe(
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  );
+  expect(res.headers['content-disposition']).toContain('.xlsx');
+  expect(res.rawPayload.subarray(0, 2).toString('latin1')).toBe('PK');
+}
+
 interface Cat {
   id: string;
   nome: string;
@@ -102,6 +116,11 @@ describe('relatorios', () => {
     expect(res.rawPayload.subarray(0, 4).toString('latin1')).toBe('%PDF');
   });
 
+  it('GET /dre?formato=xlsx devolve um .xlsx válido (zip)', async () => {
+    const res = await get(`${URL}/dre?de=2026-09-01&ate=2026-09-30&formato=xlsx`);
+    expectXlsx(res);
+  });
+
   it('GET /extrato?formato=json calcula saldo corrido', async () => {
     const res = await get(`${URL}/extrato?de=2026-09-01&ate=2026-09-30`);
     expect(res.statusCode).toBe(200);
@@ -113,6 +132,11 @@ describe('relatorios', () => {
     expect(data.totais.saldoFinal).toBe(250_000);
   });
 
+  it('GET /extrato?formato=xlsx devolve um .xlsx válido (zip)', async () => {
+    const res = await get(`${URL}/extrato?de=2026-09-01&ate=2026-09-30&formato=xlsx`);
+    expectXlsx(res);
+  });
+
   it('GET /dasn?ano= apura faturamento por grupo DASN', async () => {
     const res = await get(`${URL}/dasn?ano=2026`);
     expect(res.statusCode).toBe(200);
@@ -121,12 +145,22 @@ describe('relatorios', () => {
     expect(data.receitaServicos).toBe(300_000);
   });
 
+  it('GET /dasn?ano=&formato=xlsx devolve um .xlsx válido (zip)', async () => {
+    const res = await get(`${URL}/dasn?ano=2026&formato=xlsx`);
+    expectXlsx(res);
+  });
+
   it('GET /limite?ano= devolve o acumulado e o percentual do limite', async () => {
     const res = await get(`${URL}/limite?ano=2026`);
     expect(res.statusCode).toBe(200);
     const data = res.json<{ data: { acumulado: number; percentual: number } }>().data;
     expect(data.acumulado).toBe(300_000);
     expect(data.percentual).toBeGreaterThan(0);
+  });
+
+  it('GET /limite?ano=&formato=xlsx devolve um .xlsx válido (zip)', async () => {
+    const res = await get(`${URL}/limite?ano=2026&formato=xlsx`);
+    expectXlsx(res);
   });
 
   it('GET /lancamentos sem formato devolve CSV por padrão', async () => {
@@ -142,6 +176,11 @@ describe('relatorios', () => {
     expect(data.map((l) => l.descricao).sort()).toEqual(['Aluguel do mês', 'Serviço prestado']);
   });
 
+  it('GET /lancamentos?formato=xlsx devolve um .xlsx válido (zip)', async () => {
+    const res = await get(`${URL}/lancamentos?de=2026-09-01&ate=2026-09-30&formato=xlsx`);
+    expectXlsx(res);
+  });
+
   it('GET /contas devolve linhas e totais zerados sem parcelas', async () => {
     const res = await get(`${URL}/contas`);
     expect(res.statusCode).toBe(200);
@@ -149,6 +188,11 @@ describe('relatorios', () => {
       .data;
     expect(data.linhas).toEqual([]);
     expect(data.totais.pagar.aberto).toBe(0);
+  });
+
+  it('GET /contas?formato=xlsx devolve um .xlsx válido (zip)', async () => {
+    const res = await get(`${URL}/contas?formato=xlsx`);
+    expectXlsx(res);
   });
 
   it('outro tenant não vê os lançamentos de A', async () => {

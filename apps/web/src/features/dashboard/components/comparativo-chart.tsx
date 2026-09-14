@@ -5,17 +5,38 @@ import { Bar, CartesianGrid, ComposedChart, Line, Tooltip, XAxis, YAxis } from '
 import { ChartContainer } from '@/components/charts/chart-container';
 import { useChartColors } from '@/components/charts/chart-colors';
 import { ChartTooltip } from '@/components/charts/chart-tooltip';
+import { ErrorState } from '@/components/ui/error-state';
 import { formatBRLCompact } from '@/lib/format/money';
 import { formatMesAno } from '@/lib/format/date';
 
 export interface ComparativoChartProps {
   dados: ComparativoMensalDto | undefined;
   loading: boolean;
+  isError?: boolean;
+  error?: unknown;
+  onRetry?: () => void;
 }
 
-export function ComparativoChart({ dados, loading }: ComparativoChartProps) {
+export function ComparativoChart({
+  dados,
+  loading,
+  isError,
+  error,
+  onRetry,
+}: ComparativoChartProps) {
   const cores = useChartColors();
   const meses = dados?.meses ?? [];
+
+  if (isError) {
+    return (
+      <ErrorState
+        titulo="Não foi possível carregar o comparativo"
+        error={error}
+        onRetry={onRetry}
+        compacto
+      />
+    );
+  }
 
   if (!loading && meses.every((m) => m.receitas === 0 && m.despesas === 0)) {
     return (

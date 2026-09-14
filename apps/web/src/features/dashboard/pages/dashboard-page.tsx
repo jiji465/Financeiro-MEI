@@ -44,7 +44,13 @@ function DashboardPageConteudo() {
       <div className="space-y-4">
         <AlertasList maxItens={3} compacto />
 
-        <ResumoCards resumo={resumo.data} loading={resumo.isPending} />
+        <ResumoCards
+          resumo={resumo.data}
+          loading={resumo.isPending}
+          isError={resumo.isError}
+          error={resumo.error}
+          onRetry={() => void resumo.refetch()}
+        />
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Card className="lg:col-span-2">
@@ -52,7 +58,13 @@ function DashboardPageConteudo() {
               <CardTitle>Receitas x despesas (12 meses)</CardTitle>
             </CardHeader>
             <CardContent>
-              <ComparativoChart dados={comparativo.data} loading={comparativo.isPending} />
+              <ComparativoChart
+                dados={comparativo.data}
+                loading={comparativo.isPending}
+                isError={comparativo.isError}
+                error={comparativo.error}
+                onRetry={() => void comparativo.refetch()}
+              />
             </CardContent>
           </Card>
 
@@ -65,7 +77,13 @@ function DashboardPageConteudo() {
               <CardTitle>Despesas por categoria</CardTitle>
             </CardHeader>
             <CardContent>
-              <CategoriaDonut dados={porCategoria.data} loading={porCategoria.isPending} />
+              <CategoriaDonut
+                dados={porCategoria.data}
+                loading={porCategoria.isPending}
+                isError={porCategoria.isError}
+                error={porCategoria.error}
+                onRetry={() => void porCategoria.refetch()}
+              />
             </CardContent>
           </Card>
 
@@ -77,6 +95,9 @@ function DashboardPageConteudo() {
               <ProximosVencimentos
                 itens={resumo.data?.proximosVencimentos}
                 loading={resumo.isPending}
+                isError={resumo.isError}
+                error={resumo.error}
+                onRetry={() => void resumo.refetch()}
               />
             </CardContent>
           </Card>

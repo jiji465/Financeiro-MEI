@@ -4,6 +4,7 @@ import { Outlet } from 'react-router';
 
 import { TrocarSenhaObrigatoria } from '@/features/auth/components/trocar-senha-obrigatoria';
 import { useAuthStore } from '@/features/auth/store';
+import { TourGuiado } from '@/features/onboarding';
 
 import { OfflineBanner } from '../ui/offline-banner';
 import { PageSkeleton } from '../ui/skeleton';
@@ -42,6 +43,7 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-dvh">
+      <TourGuiado />
       <a
         href="#conteudo"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-superficie focus:px-3 focus:py-2 focus:shadow-lg"

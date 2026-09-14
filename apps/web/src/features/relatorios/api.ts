@@ -43,7 +43,7 @@ export const relatoriosApi = {
     }),
 };
 
-type Formato = 'csv' | 'pdf';
+type Formato = 'csv' | 'pdf' | 'xlsx';
 
 function baixar(path: string, nome: string, formato: Formato, query: QueryParams = {}) {
   return baixarDaApi(path, `${nome}.${formato}`, { query: { ...query, formato } });

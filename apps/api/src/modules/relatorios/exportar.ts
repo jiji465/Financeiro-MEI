@@ -1,4 +1,4 @@
-// Exportadores CSV/PDF dos relatórios. Cada função recebe o DTO JSON já calculado pelo service
+// Exportadores CSV/PDF/XLSX dos relatórios. Cada função recebe o DTO JSON já calculado pelo service
 // e devolve { buffer, nome, contentType } para a rota enviar com Content-Disposition.
 import {
   COLUNAS_CSV_LANCAMENTOS,
@@ -37,6 +37,7 @@ import {
   secaoPdf,
   tabelaPdf,
 } from '../../lib/pdf.js';
+import { bufferXlsx, XLSX_CONTENT_TYPE } from '../../lib/xlsx.js';
 import type { LinhaLancamentoRelatorio } from './service.js';
 
 export interface ArquivoGerado {
@@ -45,7 +46,7 @@ export interface ArquivoGerado {
   contentType: string;
 }
 
-export type Formato = 'csv' | 'pdf';
+export type Formato = 'csv' | 'pdf' | 'xlsx';
 
 function periodoTexto(p: { de: string; ate: string }): string {
   return `${formatData(p.de)} a ${formatData(p.ate)}`;
@@ -64,6 +65,18 @@ function csv<T>(
     buffer: bufferCsv(linhas, colunas),
     nome: nomeArquivo(nome, 'csv'),
     contentType: CSV_CONTENT_TYPE,
+  };
+}
+
+async function xlsx<T>(
+  linhas: readonly T[],
+  colunas: readonly ColunaCsv<T>[],
+  nome: string,
+): Promise<ArquivoGerado> {
+  return {
+    buffer: await bufferXlsx(linhas, colunas, { nomeAba: nome }),
+    nome: nomeArquivo(nome, 'xlsx'),
+    contentType: XLSX_CONTENT_TYPE,
   };
 }
 
@@ -143,22 +156,24 @@ function linhasCsvDre(d: DreRelatorioDto): LinhaCsvDre[] {
   ];
 }
 
+const COLUNAS_DRE: ColunaCsv<LinhaCsvDre>[] = [
+  { titulo: 'Grupo', valor: 'grupo' },
+  { titulo: 'Categoria', valor: 'categoria' },
+  { titulo: 'Grupo DASN', valor: 'grupoDasn' },
+  { titulo: 'Valor', valor: 'valor', tipo: 'centavos' },
+  {
+    titulo: '% do grupo',
+    valor: (l) => l.percentual.toLocaleString('pt-BR', { maximumFractionDigits: 2 }),
+  },
+  { titulo: 'Quantidade', valor: 'quantidade', tipo: 'inteiro' },
+];
+
 export function dreCsv(d: DreRelatorioDto): ArquivoGerado {
-  return csv(
-    linhasCsvDre(d),
-    [
-      { titulo: 'Grupo', valor: 'grupo' },
-      { titulo: 'Categoria', valor: 'categoria' },
-      { titulo: 'Grupo DASN', valor: 'grupoDasn' },
-      { titulo: 'Valor', valor: 'valor', tipo: 'centavos' },
-      {
-        titulo: '% do grupo',
-        valor: (l) => l.percentual.toLocaleString('pt-BR', { maximumFractionDigits: 2 }),
-      },
-      { titulo: 'Quantidade', valor: 'quantidade', tipo: 'inteiro' },
-    ],
-    `DRE ${d.periodo.de} a ${d.periodo.ate}`,
-  );
+  return csv(linhasCsvDre(d), COLUNAS_DRE, `DRE ${d.periodo.de} a ${d.periodo.ate}`);
+}
+
+export function dreXlsx(d: DreRelatorioDto): Promise<ArquivoGerado> {
+  return xlsx(linhasCsvDre(d), COLUNAS_DRE, `DRE ${d.periodo.de} a ${d.periodo.ate}`);
 }
 
 const COLUNAS_PDF_DRE: ColunaPdf<LinhaDreDto>[] = [
@@ -212,34 +227,38 @@ export function drePdf(d: DreRelatorioDto, emissor: EmissorPdf): Promise<Arquivo
 // ---------------------------------------------------------------------------
 
 type LinhaExtrato = ExtratoDto['linhas'][number];
+type LinhaExtratoPlanilha = LinhaExtrato & { entrada: number | null; saida: number | null };
+
+function linhasExtrato(e: ExtratoDto): LinhaExtratoPlanilha[] {
+  return e.linhas.map((l) => ({
+    ...l,
+    entrada: l.tipo === 'receita' ? l.valor : null,
+    saida: l.tipo === 'despesa' ? l.valor : null,
+  }));
+}
+
+const COLUNAS_EXTRATO: ColunaCsv<LinhaExtratoPlanilha>[] = [
+  { titulo: 'Data', valor: 'data', tipo: 'data' },
+  { titulo: 'Descrição', valor: 'descricao' },
+  { titulo: 'Categoria', valor: (l) => l.categoria ?? '' },
+  { titulo: 'Cliente/Fornecedor', valor: (l) => l.contato ?? '' },
+  {
+    titulo: 'Forma de pagamento',
+    valor: (l) => (l.formaPagamento ? LABEL_FORMA_PAGAMENTO[l.formaPagamento] : ''),
+  },
+  { titulo: 'Status', valor: (l) => LABEL_STATUS_LANCAMENTO[l.status] },
+  { titulo: 'Origem', valor: (l) => LABEL_ORIGEM_LANCAMENTO[l.origem] },
+  { titulo: 'Entrada', valor: 'entrada', tipo: 'centavos' },
+  { titulo: 'Saída', valor: 'saida', tipo: 'centavos' },
+  { titulo: 'Saldo', valor: 'saldo', tipo: 'centavos' },
+];
 
 export function extratoCsv(e: ExtratoDto): ArquivoGerado {
-  const linhas: (LinhaExtrato & { entrada: number | null; saida: number | null })[] = e.linhas.map(
-    (l) => ({
-      ...l,
-      entrada: l.tipo === 'receita' ? l.valor : null,
-      saida: l.tipo === 'despesa' ? l.valor : null,
-    }),
-  );
-  return csv(
-    linhas,
-    [
-      { titulo: 'Data', valor: 'data', tipo: 'data' },
-      { titulo: 'Descrição', valor: 'descricao' },
-      { titulo: 'Categoria', valor: (l) => l.categoria ?? '' },
-      { titulo: 'Cliente/Fornecedor', valor: (l) => l.contato ?? '' },
-      {
-        titulo: 'Forma de pagamento',
-        valor: (l) => (l.formaPagamento ? LABEL_FORMA_PAGAMENTO[l.formaPagamento] : ''),
-      },
-      { titulo: 'Status', valor: (l) => LABEL_STATUS_LANCAMENTO[l.status] },
-      { titulo: 'Origem', valor: (l) => LABEL_ORIGEM_LANCAMENTO[l.origem] },
-      { titulo: 'Entrada', valor: 'entrada', tipo: 'centavos' },
-      { titulo: 'Saída', valor: 'saida', tipo: 'centavos' },
-      { titulo: 'Saldo', valor: 'saldo', tipo: 'centavos' },
-    ],
-    `Extrato ${e.periodo.de} a ${e.periodo.ate}`,
-  );
+  return csv(linhasExtrato(e), COLUNAS_EXTRATO, `Extrato ${e.periodo.de} a ${e.periodo.ate}`);
+}
+
+export function extratoXlsx(e: ExtratoDto): Promise<ArquivoGerado> {
+  return xlsx(linhasExtrato(e), COLUNAS_EXTRATO, `Extrato ${e.periodo.de} a ${e.periodo.ate}`);
 }
 
 export function extratoPdf(e: ExtratoDto, emissor: EmissorPdf): Promise<ArquivoGerado> {
@@ -298,8 +317,8 @@ export function extratoPdf(e: ExtratoDto, emissor: EmissorPdf): Promise<ArquivoG
 
 type LinhaDasnMes = DasnRelatorioDto['porMes'][number];
 
-export function dasnCsv(d: DasnRelatorioDto): ArquivoGerado {
-  const linhas: LinhaDasnMes[] = [
+function linhasDasn(d: DasnRelatorioDto): LinhaDasnMes[] {
+  return [
     ...d.porMes,
     {
       competencia: 'Total',
@@ -310,21 +329,26 @@ export function dasnCsv(d: DasnRelatorioDto): ArquivoGerado {
       dasPago: d.dasPendentes.length === 0,
     },
   ];
-  return csv(
-    linhas,
-    [
-      {
-        titulo: 'Competência',
-        valor: (l) => (l.competencia === 'Total' ? 'Total' : formatMesAno(l.competencia, true)),
-      },
-      { titulo: 'Comércio/indústria', valor: 'comercio', tipo: 'centavos' },
-      { titulo: 'Serviços', valor: 'servicos', tipo: 'centavos' },
-      { titulo: 'Sem grupo', valor: 'semGrupo', tipo: 'centavos' },
-      { titulo: 'Total', valor: 'total', tipo: 'centavos' },
-      { titulo: 'DAS pago', valor: 'dasPago', tipo: 'booleano' },
-    ],
-    `Relatorio DASN ${d.anoBase}`,
-  );
+}
+
+const COLUNAS_DASN: ColunaCsv<LinhaDasnMes>[] = [
+  {
+    titulo: 'Competência',
+    valor: (l) => (l.competencia === 'Total' ? 'Total' : formatMesAno(l.competencia, true)),
+  },
+  { titulo: 'Comércio/indústria', valor: 'comercio', tipo: 'centavos' },
+  { titulo: 'Serviços', valor: 'servicos', tipo: 'centavos' },
+  { titulo: 'Sem grupo', valor: 'semGrupo', tipo: 'centavos' },
+  { titulo: 'Total', valor: 'total', tipo: 'centavos' },
+  { titulo: 'DAS pago', valor: 'dasPago', tipo: 'booleano' },
+];
+
+export function dasnCsv(d: DasnRelatorioDto): ArquivoGerado {
+  return csv(linhasDasn(d), COLUNAS_DASN, `Relatorio DASN ${d.anoBase}`);
+}
+
+export function dasnXlsx(d: DasnRelatorioDto): Promise<ArquivoGerado> {
+  return xlsx(linhasDasn(d), COLUNAS_DASN, `Relatorio DASN ${d.anoBase}`);
 }
 
 export function dasnPdf(d: DasnRelatorioDto, emissor: EmissorPdf): Promise<ArquivoGerado> {
@@ -400,20 +424,22 @@ export function dasnPdf(d: DasnRelatorioDto, emissor: EmissorPdf): Promise<Arqui
 
 type LinhaLimiteMes = LimiteRelatorioDto['porMes'][number];
 
+const COLUNAS_LIMITE: ColunaCsv<LinhaLimiteMes>[] = [
+  { titulo: 'Competência', valor: (m) => formatMesAno(m.competencia, true) },
+  { titulo: 'Faturamento', valor: 'valor', tipo: 'centavos' },
+  { titulo: 'Acumulado', valor: 'acumulado', tipo: 'centavos' },
+  {
+    titulo: '% do limite',
+    valor: (m) => m.percentualAcumulado.toLocaleString('pt-BR', { maximumFractionDigits: 2 }),
+  },
+];
+
 export function limiteCsv(l: LimiteRelatorioDto): ArquivoGerado {
-  return csv(
-    l.porMes,
-    [
-      { titulo: 'Competência', valor: (m) => formatMesAno(m.competencia, true) },
-      { titulo: 'Faturamento', valor: 'valor', tipo: 'centavos' },
-      { titulo: 'Acumulado', valor: 'acumulado', tipo: 'centavos' },
-      {
-        titulo: '% do limite',
-        valor: (m) => m.percentualAcumulado.toLocaleString('pt-BR', { maximumFractionDigits: 2 }),
-      },
-    ],
-    `Limite anual ${l.ano}`,
-  );
+  return csv(l.porMes, COLUNAS_LIMITE, `Limite anual ${l.ano}`);
+}
+
+export function limiteXlsx(l: LimiteRelatorioDto): Promise<ArquivoGerado> {
+  return xlsx(l.porMes, COLUNAS_LIMITE, `Limite anual ${l.ano}`);
 }
 
 export function limitePdf(l: LimiteRelatorioDto, emissor: EmissorPdf): Promise<ArquivoGerado> {
@@ -489,13 +515,22 @@ const COLUNAS_LANCAMENTOS: ColunaCsv<LinhaLancamentoRelatorio>[] = COLUNAS_CSV_L
   },
 );
 
+function sufixoPeriodo(periodo: { de?: string; ate?: string }): string {
+  return periodo.de || periodo.ate ? ` ${periodo.de ?? 'inicio'} a ${periodo.ate ?? 'hoje'}` : '';
+}
+
 export function lancamentosCsv(
   linhas: readonly LinhaLancamentoRelatorio[],
   periodo: { de?: string; ate?: string },
 ): ArquivoGerado {
-  const sufixo =
-    periodo.de || periodo.ate ? ` ${periodo.de ?? 'inicio'} a ${periodo.ate ?? 'hoje'}` : '';
-  return csv(linhas, COLUNAS_LANCAMENTOS, `Lancamentos${sufixo}`);
+  return csv(linhas, COLUNAS_LANCAMENTOS, `Lancamentos${sufixoPeriodo(periodo)}`);
+}
+
+export function lancamentosXlsx(
+  linhas: readonly LinhaLancamentoRelatorio[],
+  periodo: { de?: string; ate?: string },
+): Promise<ArquivoGerado> {
+  return xlsx(linhas, COLUNAS_LANCAMENTOS, `Lancamentos${sufixoPeriodo(periodo)}`);
 }
 
 export function lancamentosPdf(
@@ -514,8 +549,7 @@ export function lancamentosPdf(
   ];
   const receitas = linhas.filter((l) => l.tipo === 'receita').reduce((s, l) => s + l.valor, 0);
   const despesas = linhas.filter((l) => l.tipo === 'despesa').reduce((s, l) => s + l.valor, 0);
-  const sufixo =
-    periodo.de || periodo.ate ? ` ${periodo.de ?? 'inicio'} a ${periodo.ate ?? 'hoje'}` : '';
+  const sufixo = sufixoPeriodo(periodo);
   return pdf(
     `Lancamentos${sufixo}`,
     {
@@ -542,25 +576,27 @@ export function lancamentosPdf(
 
 type LinhaContas = ContasRelatorioDto['linhas'][number];
 
+const COLUNAS_CONTAS: ColunaCsv<LinhaContas>[] = [
+  { titulo: 'Tipo', valor: (l) => LABEL_TIPO_TITULO[l.tipo] },
+  { titulo: 'Descrição', valor: 'descricao' },
+  { titulo: 'Cliente/Fornecedor', valor: (l) => l.contato ?? '' },
+  { titulo: 'Categoria', valor: (l) => l.categoria ?? '' },
+  { titulo: 'Parcela', valor: 'parcela' },
+  { titulo: 'Vencimento', valor: 'vencimento', tipo: 'data' },
+  { titulo: 'Valor', valor: 'valor', tipo: 'centavos' },
+  { titulo: 'Status', valor: (l) => LABEL_STATUS_PARCELA[l.status] },
+  { titulo: 'Data de pagamento', valor: 'dataPagamento', tipo: 'data' },
+  { titulo: 'Valor pago', valor: 'valorPago', tipo: 'centavos' },
+  { titulo: 'Atrasada', valor: 'atrasada', tipo: 'booleano' },
+  { titulo: 'Dias de atraso', valor: 'diasAtraso', tipo: 'inteiro' },
+];
+
 export function contasCsv(c: ContasRelatorioDto): ArquivoGerado {
-  return csv(
-    c.linhas,
-    [
-      { titulo: 'Tipo', valor: (l) => LABEL_TIPO_TITULO[l.tipo] },
-      { titulo: 'Descrição', valor: 'descricao' },
-      { titulo: 'Cliente/Fornecedor', valor: (l) => l.contato ?? '' },
-      { titulo: 'Categoria', valor: (l) => l.categoria ?? '' },
-      { titulo: 'Parcela', valor: 'parcela' },
-      { titulo: 'Vencimento', valor: 'vencimento', tipo: 'data' },
-      { titulo: 'Valor', valor: 'valor', tipo: 'centavos' },
-      { titulo: 'Status', valor: (l) => LABEL_STATUS_PARCELA[l.status] },
-      { titulo: 'Data de pagamento', valor: 'dataPagamento', tipo: 'data' },
-      { titulo: 'Valor pago', valor: 'valorPago', tipo: 'centavos' },
-      { titulo: 'Atrasada', valor: 'atrasada', tipo: 'booleano' },
-      { titulo: 'Dias de atraso', valor: 'diasAtraso', tipo: 'inteiro' },
-    ],
-    'Contas a pagar e receber',
-  );
+  return csv(c.linhas, COLUNAS_CONTAS, 'Contas a pagar e receber');
+}
+
+export function contasXlsx(c: ContasRelatorioDto): Promise<ArquivoGerado> {
+  return xlsx(c.linhas, COLUNAS_CONTAS, 'Contas a pagar e receber');
 }
 
 export function contasPdf(c: ContasRelatorioDto, emissor: EmissorPdf): Promise<ArquivoGerado> {

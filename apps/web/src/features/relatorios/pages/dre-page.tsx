@@ -55,11 +55,18 @@ export function DrePage() {
           <ExportarBotoes
             baixandoCsv={baixar.isPending && baixar.variables?.formato === 'csv'}
             baixandoPdf={baixar.isPending && baixar.variables?.formato === 'pdf'}
+            baixandoXlsx={baixar.isPending && baixar.variables?.formato === 'xlsx'}
             onCsv={() =>
               baixar.mutate({ formato: 'csv', query: { de: periodo.de, ate: periodo.ate, regime } })
             }
             onPdf={() =>
               baixar.mutate({ formato: 'pdf', query: { de: periodo.de, ate: periodo.ate, regime } })
+            }
+            onXlsx={() =>
+              baixar.mutate({
+                formato: 'xlsx',
+                query: { de: periodo.de, ate: periodo.ate, regime },
+              })
             }
           />
         }

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { FormRadioCards, FormRootError, FormSelect, FormSwitch } from '@/components/ui/form-field';
 import { REGIME_APURACAO_LABELS, opcoesDe } from '@/lib/labels';
 
+import { useReabrirTour } from '@/features/onboarding';
 import { categoriasParaOpcoes } from '@/features/referencias/hooks';
 
 import { useAtualizarConfiguracoes, useCategoriasConfig } from '../hooks';
@@ -63,6 +64,7 @@ function valoresDe(config: ConfiguracoesDto): PreferenciasForm {
 export function PreferenciasForm({ config }: { config: ConfiguracoesDto }) {
   const atualizar = useAtualizarConfiguracoes('Preferências salvas.');
   const categoriasDespesa = useCategoriasConfig('despesa');
+  const reabrirTour = useReabrirTour();
   const form = useForm<PreferenciasForm, unknown, PreferenciasValores>({
     resolver: zodResolver(preferenciasSchema),
     defaultValues: valoresDe(config),
@@ -152,6 +154,9 @@ export function PreferenciasForm({ config }: { config: ConfiguracoesDto }) {
           name="mostrarBoasVindas"
           label="Mostrar tutorial de boas-vindas"
         />
+        <Button type="button" variant="outline" size="sm" onClick={reabrirTour}>
+          Ver tutorial novamente
+        </Button>
       </div>
 
       <Button type="submit" loading={atualizar.isPending}>

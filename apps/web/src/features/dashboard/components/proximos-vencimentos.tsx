@@ -5,6 +5,7 @@ import { Link } from 'react-router';
 
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
+import { ErrorState } from '@/components/ui/error-state';
 import { descreverPrazo, formatData } from '@/lib/format/date';
 import { formatBRL } from '@/lib/format/money';
 import { cn } from '@/lib/utils/cn';
@@ -60,11 +61,30 @@ function ItemVencimento({ item }: { item: Vencimento }) {
 export interface ProximosVencimentosProps {
   itens: Vencimento[] | undefined;
   loading: boolean;
+  isError?: boolean;
+  error?: unknown;
+  onRetry?: () => void;
 }
 
-export function ProximosVencimentos({ itens, loading }: ProximosVencimentosProps) {
+export function ProximosVencimentos({
+  itens,
+  loading,
+  isError,
+  error,
+  onRetry,
+}: ProximosVencimentosProps) {
   if (loading) {
     return <div className="h-40 animate-pulse rounded-lg bg-zinc-100" aria-hidden="true" />;
+  }
+  if (isError) {
+    return (
+      <ErrorState
+        titulo="Não foi possível carregar os vencimentos"
+        error={error}
+        onRetry={onRetry}
+        compacto
+      />
+    );
   }
   if (!itens || itens.length === 0) {
     return (

@@ -1,5 +1,5 @@
 // Contratos do módulo "relatorios" (seção 4 do plano): dre, extrato, dasn, limite, lancamentos (csv), contas.
-// Todos aceitam ?formato=json|csv|pdf; os DTOs abaixo descrevem o formato json.
+// Todos aceitam ?formato=json|csv|pdf|xlsx; os DTOs abaixo descrevem o formato json.
 import { z } from 'zod';
 
 import {

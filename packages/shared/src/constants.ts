@@ -83,7 +83,7 @@ export type TipoDocumento = (typeof TIPOS_DOCUMENTO)[number];
 export const AGRUPAMENTOS_FLUXO = ['dia', 'semana', 'mes'] as const;
 export type AgrupamentoFluxo = (typeof AGRUPAMENTOS_FLUXO)[number];
 
-export const FORMATOS_RELATORIO = ['json', 'csv', 'pdf'] as const;
+export const FORMATOS_RELATORIO = ['json', 'csv', 'pdf', 'xlsx'] as const;
 export type FormatoRelatorio = (typeof FORMATOS_RELATORIO)[number];
 
 export const SEVERIDADES_ALERTA = ['info', 'aviso', 'critico'] as const;

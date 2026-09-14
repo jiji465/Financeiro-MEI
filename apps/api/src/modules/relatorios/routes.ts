@@ -1,6 +1,7 @@
-// Rotas /api/v1/relatorios (contexto autenticado). Todos os relatórios aceitam ?formato=json|csv|pdf
-// (padrão json, exceto /lancamentos que é csv): json devolve { data }, csv/pdf devolvem o arquivo
-// binário com Content-Disposition (nomeArquivo/contentDisposition de lib/csv.ts).
+// Rotas /api/v1/relatorios (contexto autenticado). Todos os relatórios aceitam
+// ?formato=json|csv|pdf|xlsx (padrão json, exceto /lancamentos que é csv): json devolve { data },
+// csv/pdf/xlsx devolvem o arquivo binário com Content-Disposition (nomeArquivo/contentDisposition
+// de lib/csv.ts).
 import {
   centavos,
   contasRelatorioQuery,
@@ -66,7 +67,7 @@ export const relatoriosRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: TAGS,
-        summary: 'DRE simplificada do período (json/csv/pdf)',
+        summary: 'DRE simplificada do período (json/csv/pdf/xlsx)',
         querystring: dreQuery,
       },
     },
@@ -74,6 +75,8 @@ export const relatoriosRoutes: FastifyPluginAsyncZod = async (app) => {
       const tdb = forTenant(app.db, request.tenantId);
       const dto = await service.dre(tdb, request.query, app.hoje());
       if (request.query.formato === 'csv') return enviarArquivo(reply, exportar.dreCsv(dto));
+      if (request.query.formato === 'xlsx')
+        return enviarArquivo(reply, await exportar.dreXlsx(dto));
       if (request.query.formato === 'pdf') {
         const cabecalho = await service.cabecalho(tdb);
         return enviarArquivo(reply, await exportar.drePdf(dto, cabecalho.emissor));
@@ -88,7 +91,7 @@ export const relatoriosRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: TAGS,
-        summary: 'Extrato de lançamentos com saldo corrido (json/csv/pdf)',
+        summary: 'Extrato de lançamentos com saldo corrido (json/csv/pdf/xlsx)',
         querystring: extratoQuery,
       },
     },
@@ -96,6 +99,8 @@ export const relatoriosRoutes: FastifyPluginAsyncZod = async (app) => {
       const tdb = forTenant(app.db, request.tenantId);
       const dto = await service.extrato(tdb, request.query, app.hoje());
       if (request.query.formato === 'csv') return enviarArquivo(reply, exportar.extratoCsv(dto));
+      if (request.query.formato === 'xlsx')
+        return enviarArquivo(reply, await exportar.extratoXlsx(dto));
       if (request.query.formato === 'pdf') {
         const cabecalho = await service.cabecalho(tdb);
         return enviarArquivo(reply, await exportar.extratoPdf(dto, cabecalho.emissor));
@@ -110,7 +115,7 @@ export const relatoriosRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: TAGS,
-        summary: 'Relatório para a DASN-SIMEI do ano-base (json/csv/pdf)',
+        summary: 'Relatório para a DASN-SIMEI do ano-base (json/csv/pdf/xlsx)',
         querystring: dasnRelatorioQuery,
       },
     },
@@ -118,6 +123,8 @@ export const relatoriosRoutes: FastifyPluginAsyncZod = async (app) => {
       const tdb = forTenant(app.db, request.tenantId);
       const dto = await service.dasn(tdb, request.query, app.hoje());
       if (request.query.formato === 'csv') return enviarArquivo(reply, exportar.dasnCsv(dto));
+      if (request.query.formato === 'xlsx')
+        return enviarArquivo(reply, await exportar.dasnXlsx(dto));
       if (request.query.formato === 'pdf') {
         const cabecalho = await service.cabecalho(tdb);
         return enviarArquivo(reply, await exportar.dasnPdf(dto, cabecalho.emissor));
@@ -132,7 +139,7 @@ export const relatoriosRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: TAGS,
-        summary: 'Limite anual de faturamento x acumulado, mês a mês (json/csv/pdf)',
+        summary: 'Limite anual de faturamento x acumulado, mês a mês (json/csv/pdf/xlsx)',
         querystring: limiteRelatorioQuery,
       },
     },
@@ -140,6 +147,8 @@ export const relatoriosRoutes: FastifyPluginAsyncZod = async (app) => {
       const tdb = forTenant(app.db, request.tenantId);
       const dto = await service.limite(tdb, request.query, app.hoje());
       if (request.query.formato === 'csv') return enviarArquivo(reply, exportar.limiteCsv(dto));
+      if (request.query.formato === 'xlsx')
+        return enviarArquivo(reply, await exportar.limiteXlsx(dto));
       if (request.query.formato === 'pdf') {
         const cabecalho = await service.cabecalho(tdb);
         return enviarArquivo(reply, await exportar.limitePdf(dto, cabecalho.emissor));
@@ -154,7 +163,8 @@ export const relatoriosRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: TAGS,
-        summary: 'Exportação bruta de lançamentos filtrados, sem paginação (csv por padrão)',
+        summary:
+          'Exportação bruta de lançamentos filtrados, sem paginação (csv por padrão, ou pdf/xlsx)',
         querystring: lancamentosRelatorioQuery,
       },
     },
@@ -164,6 +174,9 @@ export const relatoriosRoutes: FastifyPluginAsyncZod = async (app) => {
       const linhas = await service.lancamentos(tdb, query);
       if (formato === 'csv') {
         return enviarArquivo(reply, exportar.lancamentosCsv(linhas, query));
+      }
+      if (formato === 'xlsx') {
+        return enviarArquivo(reply, await exportar.lancamentosXlsx(linhas, query));
       }
       if (formato === 'pdf') {
         const cabecalho = await service.cabecalho(tdb);
@@ -182,7 +195,7 @@ export const relatoriosRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: TAGS,
-        summary: 'Contas a pagar e a receber (parcelas) com totais (json/csv/pdf)',
+        summary: 'Contas a pagar e a receber (parcelas) com totais (json/csv/pdf/xlsx)',
         querystring: contasRelatorioQuery,
       },
     },
@@ -190,6 +203,8 @@ export const relatoriosRoutes: FastifyPluginAsyncZod = async (app) => {
       const tdb = forTenant(app.db, request.tenantId);
       const dto = await service.contas(tdb, request.query, app.hoje());
       if (request.query.formato === 'csv') return enviarArquivo(reply, exportar.contasCsv(dto));
+      if (request.query.formato === 'xlsx')
+        return enviarArquivo(reply, await exportar.contasXlsx(dto));
       if (request.query.formato === 'pdf') {
         const cabecalho = await service.cabecalho(tdb);
         return enviarArquivo(reply, await exportar.contasPdf(dto, cabecalho.emissor));

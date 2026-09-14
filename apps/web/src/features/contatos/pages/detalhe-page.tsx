@@ -26,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/empty-state';
+import { ErrorState } from '@/components/ui/error-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { Pagination } from '@/components/ui/pagination';
 import { PeriodoSelect } from '@/components/ui/periodo-select';
@@ -128,9 +129,33 @@ function DadosCard({ contato }: { contato: ContatoDto }) {
   );
 }
 
-function ResumoCards({ resumo, loading }: { resumo?: ContatoResumoDto; loading: boolean }) {
+function ResumoCards({
+  resumo,
+  loading,
+  isError,
+  error,
+  onRetry,
+}: {
+  resumo?: ContatoResumoDto;
+  loading: boolean;
+  isError?: boolean;
+  error?: unknown;
+  onRetry?: () => void;
+}) {
   const atrasado = (valor: number) =>
     valor > 0 ? `${formatBRL(valor)} em atraso` : 'Nada em atraso';
+
+  if (isError) {
+    return (
+      <ErrorState
+        titulo="Não foi possível carregar o resumo financeiro"
+        error={error}
+        onRetry={onRetry}
+        compacto
+      />
+    );
+  }
+
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard
@@ -363,7 +388,13 @@ export function ContatoDetalhePage() {
           />
 
           <div className="space-y-4">
-            <ResumoCards resumo={resumo.data} loading={resumo.isPending} />
+            <ResumoCards
+              resumo={resumo.data}
+              loading={resumo.isPending}
+              isError={resumo.isError}
+              error={resumo.error}
+              onRetry={() => void resumo.refetch()}
+            />
             <DadosCard contato={c} />
             <Historico id={c.id} />
           </div>

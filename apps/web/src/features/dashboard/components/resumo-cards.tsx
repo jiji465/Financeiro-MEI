@@ -2,15 +2,30 @@
 import type { ResumoDashboardDto } from '@meifin/shared';
 import { ArrowDownCircle, ArrowUpCircle, TrendingUp, Wallet } from 'lucide-react';
 
+import { ErrorState } from '@/components/ui/error-state';
 import { StatCard } from '@/components/ui/stat-card';
 import { formatBRL } from '@/lib/format/money';
 
 export interface ResumoCardsProps {
   resumo: ResumoDashboardDto | undefined;
   loading: boolean;
+  isError?: boolean;
+  error?: unknown;
+  onRetry?: () => void;
 }
 
-export function ResumoCards({ resumo, loading }: ResumoCardsProps) {
+export function ResumoCards({ resumo, loading, isError, error, onRetry }: ResumoCardsProps) {
+  if (isError) {
+    return (
+      <ErrorState
+        titulo="Não foi possível carregar o resumo"
+        error={error}
+        onRetry={onRetry}
+        compacto
+      />
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard

@@ -42,7 +42,7 @@ export function bufferCsv<T>(linhas: readonly T[], colunas: readonly ColunaCsv<T
  * Remove acentos e caracteres inválidos para nome de arquivo, mantendo o texto legível
  * ("Relatório DRE" → "Relatorio-DRE"). Sempre termina com a extensão informada.
  */
-export function nomeArquivo(base: string, extensao: 'csv' | 'pdf'): string {
+export function nomeArquivo(base: string, extensao: 'csv' | 'pdf' | 'xlsx'): string {
   const limpo = base
     .normalize('NFD')
     .replace(new RegExp('[\u0300-\u036f]', 'g'), '')

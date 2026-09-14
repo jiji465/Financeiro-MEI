@@ -79,7 +79,7 @@ export function RelatoriosHubPage() {
     <>
       <PageHeader
         titulo="Relatórios"
-        descricao="Consulte e exporte os relatórios do seu MEI em CSV ou PDF."
+        descricao="Consulte e exporte os relatórios do seu MEI em CSV, Excel ou PDF."
       />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -91,13 +91,14 @@ export function RelatoriosHubPage() {
       <div className="mt-6 rounded-lg border border-borda bg-superficie p-4 md:p-5">
         <h2 className="font-semibold">Exportação rápida</h2>
         <p className="mt-0.5 text-sm text-zinc-500">
-          Baixe todos os lançamentos ou todas as contas a pagar/receber sem filtros, em CSV.
+          Baixe todos os lançamentos ou todas as contas a pagar/receber sem filtros, em CSV ou
+          Excel.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <Button
             variant="outline"
             size="sm"
-            loading={baixarLancamentos.isPending}
+            loading={baixarLancamentos.isPending && baixarLancamentos.variables?.formato === 'csv'}
             onClick={() => baixarLancamentos.mutate({ formato: 'csv', query: {} })}
           >
             Exportar lançamentos (CSV)
@@ -105,10 +106,26 @@ export function RelatoriosHubPage() {
           <Button
             variant="outline"
             size="sm"
-            loading={baixarContas.isPending}
+            loading={baixarLancamentos.isPending && baixarLancamentos.variables?.formato === 'xlsx'}
+            onClick={() => baixarLancamentos.mutate({ formato: 'xlsx', query: {} })}
+          >
+            Exportar lançamentos (Excel)
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            loading={baixarContas.isPending && baixarContas.variables?.formato === 'csv'}
             onClick={() => baixarContas.mutate({ formato: 'csv', query: {} })}
           >
             Exportar contas (CSV)
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            loading={baixarContas.isPending && baixarContas.variables?.formato === 'xlsx'}
+            onClick={() => baixarContas.mutate({ formato: 'xlsx', query: {} })}
+          >
+            Exportar contas (Excel)
           </Button>
         </div>
       </div>

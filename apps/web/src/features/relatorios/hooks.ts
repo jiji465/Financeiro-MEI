@@ -14,7 +14,7 @@ import { relatoriosApi, relatoriosDownload } from './api';
 import { relatoriosKeys } from './keys';
 
 type SemFormato<T> = Omit<T, 'formato'>;
-type Formato = 'csv' | 'pdf';
+type Formato = 'csv' | 'pdf' | 'xlsx';
 
 export function useDre(query: SemFormato<Partial<DreQuery>>, opcoes: { enabled?: boolean } = {}) {
   return useQuery({
