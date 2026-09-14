@@ -12,7 +12,7 @@ import { CenaComputador, TELA_RETANGULO } from './cena-computador';
 import { PainelPreviewConteudo } from './previews';
 
 const ALTURA_SCROLL_VH = 200;
-const ESCALA_MAXIMA = 3.6;
+const ESCALA_MAXIMA = 6.5;
 const ORIGEM = {
   x: TELA_RETANGULO.left + TELA_RETANGULO.width / 2,
   y: TELA_RETANGULO.top + TELA_RETANGULO.height / 2,
@@ -55,8 +55,8 @@ export function HeroZoom() {
 
   return (
     <div ref={wrapperRef} className="relative" style={{ height: `${ALTURA_SCROLL_VH}vh` }}>
-      <div className="sticky top-0 flex h-dvh flex-col items-center justify-center overflow-hidden bg-fundo px-4 md:px-8">
-        <div ref={textoRef} className="relative z-10 mb-8 max-w-2xl text-center md:mb-10">
+      <div className="sticky top-16 flex h-[calc(100dvh-4rem)] flex-col items-center justify-center overflow-hidden bg-fundo px-4 md:px-8">
+        <div ref={textoRef} className="relative z-10 mb-6 max-w-2xl text-center md:mb-8">
           <h1 className="font-display text-4xl font-semibold tracking-tight text-texto md:text-5xl lg:text-6xl">
             O financeiro do seu MEI, <span className="text-acento-700">sem sustos</span>
           </h1>
@@ -80,10 +80,12 @@ export function HeroZoom() {
 
         <div
           ref={cenaRef}
-          className="relative w-full max-w-2xl will-change-transform"
+          className="relative will-change-transform"
           style={{ transformOrigin: `${ORIGEM.x}% ${ORIGEM.y}%` }}
         >
-          <div className="relative aspect-[10/7] w-full">
+          {/* Altura em vh (não largura fixa): garante que a cena sempre sobre espaço pro texto
+           * acima, em qualquer altura de tela — a largura vem sozinha do aspect-ratio. */}
+          <div className="relative aspect-[10/7] h-[26vh] max-w-[88vw] sm:h-[30vh] md:h-[34vh]">
             <CenaComputador />
             <div
               className="absolute overflow-hidden rounded-[3px]"

@@ -85,7 +85,7 @@ const PASSOS_ACESSO = [
 export function LandingPage() {
   return (
     <div className="flex min-h-dvh flex-col bg-fundo">
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-borda bg-fundo/90 px-4 backdrop-blur md:px-8">
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between px-4 md:px-8">
         <BrandMark />
         <Button asChild variant="ghost">
           <Link to="/entrar">Já tenho conta</Link>
@@ -157,8 +157,8 @@ export function LandingPage() {
             </Reveal>
             <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {RECURSOS.map(({ icone: Icone, titulo, descricao }, i) => (
-                <Reveal key={titulo} atraso={(i % 3) * 80}>
-                  <div className="rounded-2xl border border-borda bg-fundo p-5 shadow-card transition-shadow hover:shadow-lg">
+                <Reveal key={titulo} atraso={(i % 3) * 80} className="h-full">
+                  <div className="h-full rounded-2xl border border-borda bg-fundo p-5 shadow-card transition-shadow hover:shadow-lg">
                     <div className="flex size-10 items-center justify-center rounded-lg bg-primary-50 text-primary-700">
                       <Icone className="size-5" aria-hidden="true" />
                     </div>
