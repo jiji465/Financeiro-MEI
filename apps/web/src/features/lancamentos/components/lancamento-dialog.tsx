@@ -191,12 +191,13 @@ function LancamentoForm({ lancamento, tipoInicial, onClose }: LancamentoFormProp
     name: ['tipo', 'status', 'repetir', 'data'],
   });
   const categorias = useCategorias(tipo);
-  const contatos = useContatosOpcoes();
+  const contatos = useContatosOpcoes(tipo === 'receita' ? 'cliente' : 'fornecedor');
 
   const tipoAnterior = useRef(tipo);
   useEffect(() => {
     if (tipoAnterior.current !== tipo) {
       form.setValue('categoriaId', '');
+      form.setValue('contatoId', null);
       tipoAnterior.current = tipo;
     }
   }, [tipo, form]);

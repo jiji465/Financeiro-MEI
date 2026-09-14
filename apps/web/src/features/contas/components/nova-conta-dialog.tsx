@@ -110,7 +110,7 @@ export function NovaContaDialog({ tipo, open, onOpenChange }: NovaContaDialogPro
   const textos = TEXTOS_POR_TIPO[tipo];
   const criar = useCriarTitulo();
   const categorias = useCategorias(tipo === 'pagar' ? 'despesa' : 'receita');
-  const contatos = useContatosOpcoes();
+  const contatos = useContatosOpcoes(tipo === 'pagar' ? 'fornecedor' : 'cliente');
   const hoje = hojeSP();
 
   const form = useForm<NovaContaForm, unknown, NovaContaValores>({

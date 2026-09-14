@@ -1,5 +1,5 @@
 // Seletor de período com presets (Este mês, Mês passado, …) e intervalo personalizado.
-import { useId } from 'react';
+import { useId, useState } from 'react';
 
 import {
   PERIODO_PRESET_LABELS,
@@ -38,15 +38,24 @@ export function PeriodoSelect({
   'aria-label': ariaLabel = 'Período',
 }: PeriodoSelectProps) {
   const id = useId();
-  const preset = value.preset ?? presetDoPeriodo(value);
+  // "Personalizado" é sticky no componente, não derivado de `value`: a maioria das telas que usam
+  // PeriodoSelect só guardam `de`/`ate` no estado (não o preset escolhido) e recalculam o preset a
+  // partir das datas a cada render — como escolher "Personalizado" não muda `de`/`ate` na hora (só
+  // os campos de data aparecem, ainda vazios de uma escolha nova), esse recálculo achava de volta
+  // "Este mês" e os campos de data nunca chegavam a aparecer. Guardar a escolha aqui garante que
+  // funcione em toda tela que usa este componente, sem cada uma precisar rastrear o preset também.
+  const [personalizadoForcado, setPersonalizadoForcado] = useState(false);
+  const preset = personalizadoForcado ? 'personalizado' : (value.preset ?? presetDoPeriodo(value));
   const opcoes = presets ? OPCOES.filter((o) => presets.includes(o.value)) : OPCOES;
 
   const escolherPreset = (novo: PeriodoPreset | '') => {
     if (!novo) return;
     if (novo === 'personalizado') {
+      setPersonalizadoForcado(true);
       onChange({ de: value.de, ate: value.ate, preset: 'personalizado' });
       return;
     }
+    setPersonalizadoForcado(false);
     onChange({ ...periodoPreset(novo), preset: novo });
   };
 

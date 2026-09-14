@@ -93,6 +93,18 @@ export function MoneyInput({
     }
     if (e.key === '-' || e.key === '+' || e.key === '.' || e.key === ',') {
       e.preventDefault();
+      return;
+    }
+    // Digitação "calculadora": Backspace/Delete sempre removem o último dígito, não o caractere
+    // sob o cursor — a vírgula/ponto de milhar não é um dígito de verdade, então apagar em cima
+    // dele (comportamento padrão do navegador) não muda nada e parece "travado" para quem digita.
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      e.preventDefault();
+      if (value === null || value === undefined) return;
+      const negativo = value < 0;
+      const novoAbs = Math.trunc(Math.abs(value) / 10);
+      onChange(novoAbs === 0 ? null : negativo ? -novoAbs : novoAbs);
+      caretNoFim();
     }
   };
 
