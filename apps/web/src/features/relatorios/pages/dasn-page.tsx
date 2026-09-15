@@ -111,7 +111,7 @@ export function DasnPage() {
             </p>
             <Link
               to="/das"
-              className="mt-2 inline-block text-sm font-medium text-primary-700 underline-offset-4 hover:underline"
+              className="mt-2 inline-block text-sm font-medium text-acento-700 underline-offset-4 hover:underline"
             >
               Marcar como entregue em Obrigações
             </Link>
@@ -149,7 +149,7 @@ export function DasnPage() {
         error={query.error}
         onRetry={() => void query.refetch()}
         caption="Faturamento por mês (DASN)"
-        className="rounded-lg border border-borda bg-superficie"
+        contorno
       />
     </>
   );

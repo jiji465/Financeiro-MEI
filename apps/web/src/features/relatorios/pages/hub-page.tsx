@@ -56,7 +56,7 @@ function CardRelatorio({ titulo, descricao, to, icone: Icone }: RelatorioCard) {
       to={to}
       className="group flex items-start gap-3 rounded-lg border border-borda bg-superficie p-4 shadow-card transition-colors hover:bg-zinc-50 md:p-5"
     >
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-700">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500">
         <Icone className="size-5" aria-hidden="true" />
       </span>
       <div className="min-w-0 flex-1">

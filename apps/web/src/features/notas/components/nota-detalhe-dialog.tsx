@@ -161,7 +161,7 @@ function Detalhe({ nota, onCancelar }: { nota: NotaFiscalDto; onCancelar: () => 
                 href={nota.linkExterno}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="inline-flex items-center gap-1 text-primary-700 hover:underline"
+                className="inline-flex items-center gap-1 text-acento-700 hover:underline"
               >
                 {nota.linkExterno}
                 <ExternalLink className="size-3.5" aria-hidden="true" />

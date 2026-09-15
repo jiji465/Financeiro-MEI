@@ -90,11 +90,13 @@
   --color-alerta-500: oklch(78% 0.16 75);
   --color-alerta-600: oklch(68% 0.16 65);
   --color-alerta-700: oklch(56% 0.14 60);
+  --color-alerta-800: oklch(45% 0.11 58);
   --color-alerta: var(--color-alerta-600);
 
   /* Perigo (ações destrutivas) */
   --color-perigo-50: var(--color-despesa-50);
   --color-perigo-100: var(--color-despesa-100);
+  --color-perigo-200: var(--color-despesa-200);
   --color-perigo-500: var(--color-despesa-500);
   --color-perigo-600: var(--color-despesa-600);
   --color-perigo-700: var(--color-despesa-700);
@@ -107,10 +109,15 @@
   --color-info-700: oklch(46% 0.13 210);
   --color-info: var(--color-info-600);
 
-  /* Neutros semânticos */
-  --color-fundo: oklch(98.4% 0.003 280);
+  /* Neutros semânticos.
+   * `fundo` é um degrau abaixo do branco de propósito: é ele que faz a superfície branca dos
+   * cards e das tabelas "subir" sem precisar de sombra pesada. `linha` é o fio interno (entre
+   * linhas de tabela, dentro de um card); `borda` continua sendo o contorno externo. */
+  --color-fundo: oklch(97.2% 0.004 280);
   --color-superficie: oklch(100% 0 0);
   --color-borda: var(--color-zinc-200);
+  --color-borda-forte: var(--color-zinc-300);
+  --color-linha: var(--color-zinc-100);
   --color-texto: var(--color-zinc-900);
   --color-texto-suave: var(--color-zinc-500);
 
@@ -130,7 +137,11 @@
   --radius-xl: 1rem;
   --radius-2xl: 1.25rem;
 
-  --shadow-card: 0 1px 2px 0 oklch(0% 0 0 / 0.05), 0 2px 8px 0 oklch(0% 0 0 / 0.07);
+  /* A definição de um card vem da borda de 1px + do contraste com `fundo`, não da sombra —
+   * sombra forte em painel de dados vira ruído e "empilha" visualmente cards de mesma
+   * importância. `shadow-card-hover` é o único degrau acima, reservado a card clicável. */
+  --shadow-card: 0 1px 2px 0 oklch(0% 0 0 / 0.04);
+  --shadow-card-hover: 0 1px 2px 0 oklch(0% 0 0 / 0.05), 0 6px 16px -4px oklch(0% 0 0 / 0.1);
 
   /* Animações usadas pelos overlays Radix (data-state) */
   --animate-fade-in: fade-in 150ms ease-out;
@@ -143,6 +154,18 @@
   --animate-slide-out-right: slide-out-right 180ms ease-in;
   --animate-slide-in-left: slide-in-left 220ms cubic-bezier(0.32, 0.72, 0, 1);
   --animate-slide-out-left: slide-out-left 180ms ease-in;
+  /* Skeleton: varredura suave em vez de piscar (pulse) — menos cansativo em telas com muitas
+   * linhas carregando ao mesmo tempo. */
+  --animate-brilho: brilho 1.8s ease-in-out infinite;
+
+  @keyframes brilho {
+    from {
+      background-position: 180% 0;
+    }
+    to {
+      background-position: -80% 0;
+    }
+  }
 
   @keyframes fade-in {
     from {
@@ -249,19 +272,26 @@
   button {
     font-size: 16px;
   }
-  /* Anel de foco visível e consistente (teclado) */
+  /* Títulos: Inter em tamanho grande pede tracking negativo pra não parecer "solta". */
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.014em;
+  }
+  /* Anel de foco visível e consistente (teclado). Usa o acento porque foco é estado de ação. */
   :focus-visible {
-    outline: 2px solid var(--color-primary-600);
+    outline: 2px solid var(--color-acento-600);
     outline-offset: 2px;
     border-radius: var(--radius-sm);
   }
-  /* Valores monetários sempre alinhados */
+  /* Valores monetários sempre alinhados: largura fixa de dígito e zero cortado (distingue 0 de O
+   * em colunas de valor). Vale pra toda tabela e pra qualquer elemento marcado com tabular-nums. */
   td,
   th {
-    font-variant-numeric: tabular-nums;
+    font-variant-numeric: tabular-nums slashed-zero;
   }
   ::selection {
-    background-color: var(--color-primary-200);
+    background-color: var(--color-acento-100);
   }
   /* Respeita preferência de menos movimento */
   @media (prefers-reduced-motion: reduce) {
@@ -282,6 +312,23 @@
 
 @utility scrollbar-fina {
   scrollbar-width: thin;
+}
+
+/* Valor monetário fora de tabela (cards de resumo, listas, totais): dígitos de largura fixa,
+ * zero cortado e um leve aperto pra que números grandes não fiquem espalhados. */
+@utility valor {
+  font-variant-numeric: tabular-nums slashed-zero;
+  letter-spacing: -0.02em;
+}
+
+/* Rótulo de campo/coluna: pequeno, em caixa alta discreta. Usado em cabeçalho de tabela e
+ * legenda de número, pra separar "o que é" de "quanto é" sem precisar de mais uma cor. */
+@utility rotulo {
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 @utility no-print {

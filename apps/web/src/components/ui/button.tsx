@@ -11,12 +11,13 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         primary: 'bg-acento-600 text-white shadow-xs hover:bg-acento-700 active:bg-acento-800',
-        secondary: 'bg-primary-50 text-primary-800 hover:bg-primary-100 active:bg-primary-200',
+        // Secundário neutro: primary-50 é quase branco e sumia sobre a superfície dos cards.
+        secondary: 'bg-zinc-100 text-zinc-800 hover:bg-zinc-200 active:bg-zinc-300',
         outline:
           'border border-borda bg-superficie text-texto shadow-xs hover:bg-zinc-50 active:bg-zinc-100',
         ghost: 'text-texto hover:bg-zinc-100 active:bg-zinc-200',
         destructive: 'bg-perigo-600 text-white shadow-xs hover:bg-perigo-700',
-        link: 'h-auto px-0 text-primary-700 underline-offset-4 hover:underline',
+        link: 'h-auto px-0 text-acento-700 underline-offset-4 hover:underline',
       },
       size: {
         sm: 'h-9 px-3 text-sm',

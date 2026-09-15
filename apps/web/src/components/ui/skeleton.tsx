@@ -2,11 +2,17 @@ import { type HTMLAttributes } from 'react';
 
 import { cn } from '@/lib/utils/cn';
 
+/** Bloco de carregamento. Usa uma varredura de brilho (não "pisca") — em telas com muitas
+ * linhas carregando ao mesmo tempo, o pulse de todas em uníssono chama mais atenção que o
+ * conteúdo que está chegando. */
 export function Skeleton({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       aria-hidden="true"
-      className={cn('animate-pulse rounded-md bg-zinc-200/80', className)}
+      className={cn(
+        'animate-brilho rounded-md bg-zinc-200/70 bg-[length:220%_100%] bg-[linear-gradient(90deg,var(--color-zinc-200)_18%,var(--color-zinc-100)_38%,var(--color-zinc-200)_58%)]',
+        className,
+      )}
       {...props}
     />
   );
@@ -27,11 +33,12 @@ export function SkeletonText({ linhas = 3, className }: { linhas?: number; class
 export function PageSkeleton() {
   return (
     <div className="space-y-6 p-4 md:p-6" role="status" aria-label="Carregando">
-      <div className="space-y-2">
-        <Skeleton className="h-7 w-48" />
-        <Skeleton className="h-4 w-72" />
+      <div className="space-y-2.5">
+        <Skeleton className="h-6 w-48" />
+        <Skeleton className="h-3.5 w-72" />
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Skeleton className="h-24" />
         <Skeleton className="h-24" />
         <Skeleton className="h-24" />
         <Skeleton className="h-24" />

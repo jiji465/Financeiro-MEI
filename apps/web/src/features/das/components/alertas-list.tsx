@@ -20,6 +20,8 @@ export interface AlertasListProps {
   tipos?: readonly string[];
   /** Título opcional acima da lista. */
   titulo?: string;
+  /** Não renderiza nada quando não há alertas (dashboard: "tudo em dia" não precisa de caixa). */
+  ocultarSeVazio?: boolean;
   className?: string;
 }
 
@@ -28,19 +30,19 @@ const ESTILO: Record<
   { borda: string; icone: typeof Info; iconeClasse: string; rotulo: string }
 > = {
   critico: {
-    borda: 'border-perigo-200 bg-perigo-50/60',
+    borda: 'border-perigo-200 border-l-perigo-500 bg-perigo-50/60',
     icone: CircleAlert,
     iconeClasse: 'text-perigo-600',
     rotulo: 'Crítico',
   },
   aviso: {
-    borda: 'border-alerta-200 bg-alerta-50/60',
+    borda: 'border-alerta-200 border-l-alerta-500 bg-alerta-50/60',
     icone: TriangleAlert,
     iconeClasse: 'text-alerta-600',
     rotulo: 'Aviso',
   },
   info: {
-    borda: 'border-info-100 bg-info-50/60',
+    borda: 'border-info-100 border-l-info-600 bg-info-50/60',
     icone: Info,
     iconeClasse: 'text-info-700',
     rotulo: 'Informação',
@@ -62,7 +64,9 @@ export function AlertaItem({
   const Icone = estilo.icone;
   return (
     <li
-      className={cn('flex items-start gap-3 rounded-lg border p-3', estilo.borda)}
+      // Faixa mais grossa à esquerda: dá a severidade numa olhada, na mesma cor da borda,
+      // sem precisar tingir o fundo inteiro com mais força.
+      className={cn('flex items-start gap-3 rounded-lg border border-l-[3px] p-3', estilo.borda)}
       data-severidade={alerta.severidade}
     >
       <Icone className={cn('mt-0.5 size-5 shrink-0', estilo.iconeClasse)} aria-hidden="true" />
@@ -75,7 +79,7 @@ export function AlertaItem({
         {alerta.acao ? (
           <Link
             to={alerta.acao.url}
-            className="mt-1 inline-block text-sm font-medium text-primary-700 underline-offset-4 hover:underline"
+            className="mt-1 inline-block text-sm font-medium text-acento-700 underline-offset-4 hover:underline"
           >
             {alerta.acao.rotulo}
           </Link>
@@ -98,11 +102,19 @@ export function AlertaItem({
   );
 }
 
-export function AlertasList({ maxItens, compacto, tipos, titulo, className }: AlertasListProps) {
+export function AlertasList({
+  maxItens,
+  compacto,
+  tipos,
+  titulo,
+  ocultarSeVazio,
+  className,
+}: AlertasListProps) {
   const query = useAlertas();
   const dispensar = useDispensarAlerta();
 
   if (query.isPending) {
+    if (ocultarSeVazio) return null;
     return (
       <div className={cn('space-y-2', className)} role="status" aria-label="Carregando alertas">
         <Skeleton className="h-14 w-full" />
@@ -111,6 +123,7 @@ export function AlertasList({ maxItens, compacto, tipos, titulo, className }: Al
     );
   }
   if (query.isError || !query.data) {
+    if (ocultarSeVazio) return null;
     return (
       <ErrorState
         compacto
@@ -126,6 +139,7 @@ export function AlertasList({ maxItens, compacto, tipos, titulo, className }: Al
     : query.data;
   const visiveis = maxItens ? filtrados.slice(0, maxItens) : filtrados;
   const ocultos = filtrados.length - visiveis.length;
+  if (ocultarSeVazio && visiveis.length === 0) return null;
 
   return (
     <section className={className} aria-label={titulo ?? 'Alertas'}>
@@ -163,7 +177,7 @@ export function AlertasList({ maxItens, compacto, tipos, titulo, className }: Al
       )}
       {ocultos > 0 ? (
         <p className="mt-2 text-xs text-zinc-500">
-          <Link to="/das" className="text-primary-700 underline-offset-4 hover:underline">
+          <Link to="/das" className="text-acento-700 underline-offset-4 hover:underline">
             Ver mais {ocultos} {ocultos === 1 ? 'alerta' : 'alertas'}
           </Link>
         </p>

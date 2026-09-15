@@ -113,6 +113,7 @@ export function FaturamentoPage() {
       ) : null}
 
       <DataTable
+        contorno
         columns={colunas}
         data={dto?.porMes}
         rowKey={(m) => m.competencia}

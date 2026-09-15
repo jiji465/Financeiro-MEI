@@ -97,7 +97,7 @@ export function DrePage() {
             error={query.error}
             onRetry={() => void query.refetch()}
             footer={dto ? `Total: ${formatBRL(dto.receitas.total)}` : undefined}
-            className="rounded-lg border border-borda bg-superficie"
+            contorno
           />
         </div>
         <div>
@@ -111,7 +111,7 @@ export function DrePage() {
             error={query.error}
             onRetry={() => void query.refetch()}
             footer={dto ? `Total: ${formatBRL(dto.despesas.total)}` : undefined}
-            className="rounded-lg border border-borda bg-superficie"
+            contorno
           />
         </div>
       </div>

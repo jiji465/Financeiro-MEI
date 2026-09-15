@@ -243,7 +243,7 @@ export function ContatosListaPage() {
             </p>
           </div>
         )}
-        className="rounded-lg border border-borda bg-superficie md:p-2"
+        contorno
       />
 
       {meta ? (

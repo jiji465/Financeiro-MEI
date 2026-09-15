@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Combobox } from '@/components/ui/combobox';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
@@ -29,6 +30,7 @@ import { formatBRL } from '@/lib/format/money';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { useSearchParamsObject } from '@/lib/hooks/use-search-params-state';
 import { opcoesDe, STATUS_PARCELA_LABELS } from '@/lib/labels';
+import { cn } from '@/lib/utils/cn';
 
 import { BaixaDialog } from '../components/baixa-dialog';
 import { NovaContaDialog } from '../components/nova-conta-dialog';
@@ -53,8 +55,10 @@ function LinhaParcela({
 }) {
   const textos = TEXTOS_POR_TIPO[tipo];
   return (
+    // group/linha: o botão de baixa fica discreto até o mouse chegar na linha — continua
+    // visível e clicável, mas para de disputar atenção com o valor em toda linha aberta.
     <li
-      className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-sm hover:bg-zinc-50"
+      className="group/linha flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-sm transition-colors hover:bg-zinc-50"
       onClick={() => onAbrir(item.titulo.id)}
     >
       <div className="min-w-0 flex-1">
@@ -70,17 +74,16 @@ function LinhaParcela({
           {item.titulo.contato?.nome ?? `${textos.contatoLabel} não informado`}
         </p>
       </div>
-      <span className="w-24 shrink-0 tabular-nums text-zinc-600">
-        {formatData(item.vencimento)}
-      </span>
-      <span className="w-28 shrink-0 text-right font-semibold tabular-nums">
+      <span className="w-20 shrink-0 text-zinc-500 valor">{formatData(item.vencimento)}</span>
+      <StatusParcelaBadge parcela={item} />
+      <span className="w-28 shrink-0 text-right font-semibold text-texto valor">
         {formatBRL(item.valor)}
       </span>
-      <StatusParcelaBadge parcela={item} />
       {item.status === 'aberta' ? (
         <Button
           size="sm"
           variant="secondary"
+          className="opacity-70 transition-opacity group-focus-within/linha:opacity-100 group-hover/linha:opacity-100"
           onClick={(e) => {
             e.stopPropagation();
             onBaixar(item.id);
@@ -157,8 +160,11 @@ function ListaContas({ tipo }: { tipo: TipoTitulo }) {
           </TabsList>
         </Tabs>
 
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Card className="grid grid-cols-2 gap-px overflow-hidden bg-borda md:grid-cols-4">
           <StatCard
+            semCard
+            className="bg-superficie p-4"
+            tamanho="sm"
             titulo="Atrasadas"
             valor={formatBRL(resumoTipo?.atrasadas.valor ?? 0)}
             tone="despesa"
@@ -167,6 +173,9 @@ function ListaContas({ tipo }: { tipo: TipoTitulo }) {
             loading={resumo.isPending}
           />
           <StatCard
+            semCard
+            className="bg-superficie p-4"
+            tamanho="sm"
             titulo="Próximos 30 dias"
             valor={formatBRL(resumoTipo?.proximas.valor ?? 0)}
             tone="alerta"
@@ -174,20 +183,25 @@ function ListaContas({ tipo }: { tipo: TipoTitulo }) {
             loading={resumo.isPending}
           />
           <StatCard
+            semCard
+            className="bg-superficie p-4"
+            tamanho="sm"
             titulo="Em aberto"
             valor={formatBRL(resumoTipo?.abertas.valor ?? 0)}
-            tone="primary"
             rodape={`${resumoTipo?.abertas.quantidade ?? 0} parcela(s)`}
             loading={resumo.isPending}
           />
           <StatCard
+            semCard
+            className="bg-superficie p-4"
+            tamanho="sm"
             titulo={textos.baixado}
             valor={formatBRL(resumoTipo?.pagasNoPeriodo.valor ?? 0)}
             tone="receita"
             rodape="Últimos 30 dias"
             loading={resumo.isPending}
           />
-        </div>
+        </Card>
 
         <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end">
           <div className="w-full md:w-64">
@@ -242,15 +256,24 @@ function ListaContas({ tipo }: { tipo: TipoTitulo }) {
             <div className="space-y-5">
               {grupos.map((g) => (
                 <section key={g.grupo}>
-                  <div className="mb-2 flex items-center justify-between px-1">
-                    <h2 className="text-sm font-semibold text-zinc-700">
-                      {g.label}{' '}
-                      <span className="font-normal text-zinc-500">({g.itens.length})</span>
+                  <div className="mb-2 flex items-baseline justify-between gap-3 px-1">
+                    <h2
+                      className={cn(
+                        'flex items-baseline gap-2 text-sm font-semibold',
+                        // "Vencidas" é o único grupo que representa um problema: é o único que
+                        // ganha cor no título.
+                        g.grupo === 'vencidas' ? 'text-despesa-700' : 'text-zinc-700',
+                      )}
+                    >
+                      {g.label}
+                      <span className="font-normal text-zinc-400 valor">{g.itens.length}</span>
                     </h2>
-                    <span className="text-sm font-semibold tabular-nums">{formatBRL(g.total)}</span>
+                    <span className="text-sm font-semibold text-texto valor">
+                      {formatBRL(g.total)}
+                    </span>
                   </div>
                   <ul
-                    className="divide-y divide-borda rounded-lg border border-borda bg-superficie"
+                    className="divide-y divide-linha overflow-hidden rounded-lg border border-borda bg-superficie"
                     aria-label={g.label}
                   >
                     {g.itens.map((item) => (

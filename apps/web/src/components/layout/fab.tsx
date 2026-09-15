@@ -28,7 +28,7 @@ export function Fab() {
         aria-label="Novo lançamento"
         aria-haspopup="dialog"
         aria-expanded={aberto}
-        className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-40 flex size-14 items-center justify-center rounded-full bg-primary-600 text-white shadow-lg transition-colors hover:bg-primary-700 active:bg-primary-800 md:hidden"
+        className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-40 flex size-14 items-center justify-center rounded-full bg-acento-600 text-white shadow-lg transition-colors hover:bg-acento-700 active:bg-acento-800 md:hidden"
       >
         <Plus className="size-7" aria-hidden="true" />
       </button>

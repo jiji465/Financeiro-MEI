@@ -15,7 +15,7 @@ export function Switch({ className, label, descricao, id, ...props }: SwitchProp
     <SwitchPrimitive.Root
       id={inputId}
       className={cn(
-        'peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent bg-zinc-300 transition-colors data-[state=checked]:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-50',
+        'peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent bg-zinc-300 transition-colors data-[state=checked]:bg-acento-600 disabled:cursor-not-allowed disabled:opacity-50',
         className,
       )}
       {...props}

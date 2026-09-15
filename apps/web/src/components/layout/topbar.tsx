@@ -30,12 +30,12 @@ export function Topbar() {
   const temConfiguracoes = !interno && navItems.some((i) => i.to === '/configuracoes');
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-borda bg-superficie/95 px-4 backdrop-blur md:h-16 md:px-6">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-borda bg-superficie/85 px-4 backdrop-blur-md md:h-14 md:px-8">
       <div className="md:hidden">
         <BrandMark />
       </div>
       <p
-        className="hidden min-w-0 truncate text-sm font-medium text-zinc-500 md:block"
+        className="hidden min-w-0 truncate text-sm font-medium text-zinc-600 md:block"
         aria-live="polite"
       >
         {atual?.label ?? 'MEI Financeiro'}

@@ -56,7 +56,7 @@ export function AppShell() {
         <Topbar />
         <main
           id="conteudo"
-          className="mx-auto w-full max-w-7xl flex-1 px-4 pt-4 pb-28 md:px-6 md:pt-6 md:pb-10"
+          className="mx-auto w-full max-w-[84rem] flex-1 px-4 pt-5 pb-28 md:px-8 md:pt-7 md:pb-12"
         >
           <Suspense fallback={<PageSkeleton />}>
             <Outlet />

@@ -35,7 +35,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     >
       <div
         className={cn(
-          'flex h-16 items-center border-b border-borda',
+          // h-14 igual à topbar: a linha da marca e a da topbar formam uma régua só no topo.
+          'flex h-14 items-center border-b border-borda',
           collapsed ? 'justify-center px-2' : 'px-4',
         )}
       >
@@ -46,9 +47,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {grupos.map((grupo) => (
           <div key={grupo.id} className="mb-3">
             {grupo.label && !collapsed ? (
-              <p className="px-3 pb-1 text-xs font-medium tracking-wide text-zinc-500 uppercase">
-                {grupo.label}
-              </p>
+              <p className="px-3 pb-1.5 text-zinc-400 rotulo">{grupo.label}</p>
             ) : null}
             <ul className="space-y-0.5">
               {grupo.itens.map((item) => {
@@ -59,17 +58,33 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                     end={item.to === '/'}
                     className={({ isActive }) =>
                       cn(
-                        'flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-texto',
-                        isActive && 'bg-primary-50 text-primary-800 hover:bg-primary-100',
+                        // Item ativo: fundo neutro + texto cheio. O acento aparece só no ícone —
+                        // é o suficiente pra marcar "você está aqui" sem pintar o menu inteiro.
+                        'group/nav flex h-9 items-center gap-3 rounded-md px-3 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-texto',
+                        isActive && 'bg-zinc-100 font-semibold text-texto',
                         collapsed && 'justify-center px-0',
                       )
                     }
                   >
-                    {Icon ? <Icon className="size-5 shrink-0" aria-hidden="true" /> : null}
-                    {collapsed ? (
-                      <span className="sr-only">{item.label}</span>
-                    ) : (
-                      <span className="truncate">{item.label}</span>
+                    {({ isActive }) => (
+                      <>
+                        {Icon ? (
+                          <Icon
+                            className={cn(
+                              'size-[18px] shrink-0 transition-colors',
+                              isActive
+                                ? 'text-acento-600'
+                                : 'text-zinc-400 group-hover/nav:text-zinc-500',
+                            )}
+                            aria-hidden="true"
+                          />
+                        ) : null}
+                        {collapsed ? (
+                          <span className="sr-only">{item.label}</span>
+                        ) : (
+                          <span className="truncate">{item.label}</span>
+                        )}
+                      </>
                     )}
                   </NavLink>
                 );

@@ -12,7 +12,7 @@ import { bottomNavSlots, filtrarNav, itensMais, rotaAtiva } from './nav';
 
 const itemClass =
   'flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-medium text-zinc-500 transition-colors [&_svg]:size-5';
-const ativoClass = 'text-primary-700';
+const ativoClass = 'text-acento-700';
 
 /** Barra inferior do mobile: 4 atalhos + "Mais" (folha com o restante do menu e "Sair"). */
 export function BottomNav() {
@@ -80,7 +80,7 @@ export function BottomNav() {
                     className={({ isActive }) =>
                       cn(
                         'flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-lg border border-borda p-3 text-center text-xs font-medium text-zinc-700 [&_svg]:size-6',
-                        isActive && 'border-primary-300 bg-primary-50 text-primary-800',
+                        isActive && 'border-acento-200 bg-acento-50 text-acento-800',
                       )
                     }
                   >

@@ -72,7 +72,7 @@ function DadosCard({ contato }: { contato: ContatoDto }) {
       icone: <Mail aria-hidden="true" />,
       rotulo: 'E-mail',
       valor: (
-        <a href={`mailto:${contato.email}`} className="text-primary-700 hover:underline">
+        <a href={`mailto:${contato.email}`} className="text-acento-700 hover:underline">
           {contato.email}
         </a>
       ),
@@ -83,7 +83,7 @@ function DadosCard({ contato }: { contato: ContatoDto }) {
       icone: <Phone aria-hidden="true" />,
       rotulo: 'Telefone',
       valor: (
-        <a href={`tel:+55${contato.telefone}`} className="text-primary-700 hover:underline">
+        <a href={`tel:+55${contato.telefone}`} className="text-acento-700 hover:underline">
           {formatTelefone(contato.telefone)}
         </a>
       ),
@@ -101,7 +101,7 @@ function DadosCard({ contato }: { contato: ContatoDto }) {
         {itens.length === 0 && !contato.observacoes ? (
           <p className="text-sm text-zinc-500">
             Nenhum dado adicional.{' '}
-            <Link to={`/contatos/${contato.id}/editar`} className="text-primary-700 underline">
+            <Link to={`/contatos/${contato.id}/editar`} className="text-acento-700 underline">
               Completar cadastro
             </Link>
           </p>

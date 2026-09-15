@@ -34,20 +34,20 @@ export function ErrorState({
     <div
       role="alert"
       className={cn(
-        'flex flex-col items-center justify-center rounded-lg border border-perigo-100 bg-perigo-50/50 px-4 text-center',
-        compacto ? 'py-6' : 'py-12',
+        'flex flex-col items-center justify-center rounded-lg border border-perigo-100 bg-perigo-50/40 px-4 text-center',
+        compacto ? 'py-7' : 'py-14',
         className,
       )}
     >
-      <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-perigo-100 text-perigo-700 [&_svg]:size-6">
+      <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-perigo-100 text-perigo-700 [&_svg]:size-5">
         {rede ? <WifiOff aria-hidden="true" /> : <CircleAlert aria-hidden="true" />}
       </div>
-      <h3 className="text-base font-semibold">{tituloFinal}</h3>
-      <p className="mt-1 max-w-sm text-sm text-zinc-600">{descricaoFinal}</p>
+      <h3 className="text-[0.9375rem] font-semibold text-texto">{tituloFinal}</h3>
+      <p className="mt-1 max-w-sm text-sm leading-relaxed text-zinc-600">{descricaoFinal}</p>
       {onRetry ? (
         <Button
           variant="outline"
-          className="mt-4"
+          className="mt-5"
           onClick={onRetry}
           loading={retrying}
           icon={<RefreshCw aria-hidden="true" />}

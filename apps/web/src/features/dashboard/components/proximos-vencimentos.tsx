@@ -6,6 +6,7 @@ import { Link } from 'react-router';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { Skeleton } from '@/components/ui/skeleton';
 import { descreverPrazo, formatData } from '@/lib/format/date';
 import { formatBRL } from '@/lib/format/money';
 import { cn } from '@/lib/utils/cn';
@@ -30,29 +31,32 @@ function ItemVencimento({ item }: { item: Vencimento }) {
     <li>
       <Link
         to={LINK[item.tipo]}
+        // Lista contínua com um fio entre itens (o divide-y do <ul>) em vez de um cartão por
+        // vencimento: os valores ficam alinhados na mesma coluna e dá pra varrer de cima a baixo.
+        // Só o item atrasado ganha peso — faixa vermelha à esquerda e fundo levíssimo.
         className={cn(
-          'flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors hover:bg-zinc-50',
-          item.atrasado ? 'border-despesa-200 bg-despesa-50/50' : 'border-borda',
+          'flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-zinc-50',
+          item.atrasado && 'border-l-2 border-despesa-500 bg-despesa-50/40 pl-2.5',
         )}
       >
         <Icone
-          className={cn('size-5 shrink-0', item.atrasado ? 'text-despesa-600' : 'text-zinc-500')}
+          className={cn('size-4 shrink-0', item.atrasado ? 'text-despesa-600' : 'text-zinc-400')}
           aria-hidden="true"
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">{item.titulo}</p>
-          <p className="text-xs text-zinc-500">
-            {formatData(item.data)} · {descreverPrazo(item.data)}
+          {/* O selo "Atrasado" fica na segunda linha, junto da data: a primeira linha é só o
+              título, que no celular já disputa espaço com o valor. */}
+          <p className="truncate text-sm font-medium text-texto">{item.titulo}</p>
+          <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-zinc-500">
+            <span className="valor">{formatData(item.data)}</span>
+            <span aria-hidden="true">·</span>
+            <span>{descreverPrazo(item.data)}</span>
+            {item.atrasado ? <Badge tone="despesa">Atrasado</Badge> : null}
           </p>
         </div>
-        <div className="shrink-0 text-right">
-          <p className="text-sm font-semibold tabular-nums">{formatBRL(item.valor)}</p>
-          {item.atrasado ? (
-            <Badge tone="despesa" className="mt-0.5">
-              Atrasado
-            </Badge>
-          ) : null}
-        </div>
+        <span className="shrink-0 text-sm font-semibold whitespace-nowrap text-texto valor">
+          {formatBRL(item.valor)}
+        </span>
       </Link>
     </li>
   );
@@ -74,7 +78,20 @@ export function ProximosVencimentos({
   onRetry,
 }: ProximosVencimentosProps) {
   if (loading) {
-    return <div className="h-40 animate-pulse rounded-lg bg-zinc-100" aria-hidden="true" />;
+    return (
+      <ul className="-mx-3 divide-y divide-linha" aria-hidden="true">
+        {Array.from({ length: 4 }, (_, i) => (
+          <li key={i} className="flex items-center gap-3 px-3 py-3">
+            <Skeleton className="size-4 shrink-0 rounded-full" />
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <Skeleton className="h-3.5 w-2/5" />
+              <Skeleton className="h-3 w-1/4" />
+            </div>
+            <Skeleton className="h-3.5 w-20 shrink-0" />
+          </li>
+        ))}
+      </ul>
+    );
   }
   if (isError) {
     return (
@@ -97,7 +114,9 @@ export function ProximosVencimentos({
     );
   }
   return (
-    <ul className="space-y-2">
+    // -mx-3 sangra a lista até a borda do card: o realce da linha (hover, atrasado) vale a
+    // largura inteira do painel, como numa tabela.
+    <ul className="-mx-3 divide-y divide-linha">
       {itens.map((item, i) => (
         <ItemVencimento key={`${item.tipo}-${item.data}-${i}`} item={item} />
       ))}

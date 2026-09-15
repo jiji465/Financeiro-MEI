@@ -150,6 +150,7 @@ function ListaDoTipo({ tipo }: { tipo: TipoLancamento }) {
         </Button>
       </div>
       <DataTable
+        contorno
         columns={columns}
         data={query.data}
         rowKey={(c) => c.id}

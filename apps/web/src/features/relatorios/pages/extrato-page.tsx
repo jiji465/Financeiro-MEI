@@ -130,7 +130,7 @@ export function ExtratoPage() {
             ? `Saldo inicial: ${formatBRL(dto.saldoInicial)} · Entradas: ${formatBRL(dto.totais.receitas)} · Saídas: ${formatBRL(dto.totais.despesas)} · Saldo final: ${formatBRL(dto.totais.saldoFinal)}`
             : undefined
         }
-        className="rounded-lg border border-borda bg-superficie"
+        contorno
       />
     </>
   );

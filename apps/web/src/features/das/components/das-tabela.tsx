@@ -27,7 +27,7 @@ function ValorComDetalhamento({ competencia }: { competencia: DasCompetenciaDto 
       <TooltipTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-1 rounded tabular-nums underline decoration-dotted underline-offset-4 hover:text-primary-700"
+          className="inline-flex items-center gap-1 rounded tabular-nums underline decoration-dotted underline-offset-4 hover:text-acento-700"
           aria-label={`${formatBRL(competencia.valor)}. Ver composição do valor`}
         >
           {formatBRL(competencia.valor)}
@@ -206,6 +206,7 @@ export function DasTabela({ das }: { das: DasAnoDto }) {
   return (
     <>
       <DataTable
+        contorno
         columns={columns}
         data={das.competencias}
         rowKey={(c) => c.competencia}

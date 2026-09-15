@@ -39,7 +39,7 @@ export function PageHeader({
   }, [titulo, documentTitle]);
 
   return (
-    <header className={cn('mb-4 flex flex-col gap-3 md:mb-6', className)}>
+    <header className={cn('mb-5 flex flex-col gap-4 md:mb-6', className)}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-2">
           {voltar ? (
@@ -50,13 +50,17 @@ export function PageHeader({
             </Button>
           ) : null}
           <div className="min-w-0">
-            <h1 className="truncate font-display text-xl font-semibold tracking-tight md:text-2xl">
+            <h1 className="truncate font-display text-[1.375rem] leading-tight font-semibold md:text-[1.625rem]">
               {titulo}
             </h1>
-            {descricao ? <p className="mt-0.5 text-sm text-zinc-500">{descricao}</p> : null}
+            {descricao ? (
+              <p className="mt-1 text-sm leading-snug text-zinc-500">{descricao}</p>
+            ) : null}
           </div>
         </div>
-        {acoes ? <div className="flex shrink-0 flex-wrap items-center gap-2">{acoes}</div> : null}
+        {acoes ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">{acoes}</div>
+        ) : null}
       </div>
       {children}
     </header>

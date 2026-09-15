@@ -48,14 +48,26 @@ export interface DataTableProps<T> {
   caption?: string;
   skeletonRows?: number;
   className?: string;
+  /** Desenha o contorno (borda + superfície) ao redor da tabela. Fica só em volta dos dados —
+   * o estado vazio e o de erro trazem o próprio contorno e não devem ganhar um segundo. */
+  contorno?: boolean;
   /** Classe extra por linha (ex.: destacar vencidos). */
   rowClassName?: (row: T) => string | undefined;
 }
 
 function alinhamento<T>(col: DataTableColumn<T>): string {
-  if (col.numeric || col.align === 'right') return 'text-right tabular-nums';
+  if (col.numeric || col.align === 'right') return 'text-right';
   if (col.align === 'center') return 'text-center';
   return 'text-left';
+}
+
+/** Largura do esqueleto por coluna: colunas de valor ficam curtas e à direita, a primeira
+ * coluna (normalmente a descrição) fica larga. Esqueleto com a forma do conteúdo real evita o
+ * "pulo" de layout quando os dados chegam. */
+function skeletonClasse<T>(col: DataTableColumn<T>, index: number): string {
+  if (col.numeric || col.align === 'right') return 'ml-auto h-3.5 w-20';
+  if (index === 0) return 'h-3.5 w-full max-w-56';
+  return 'h-3.5 w-full max-w-28';
 }
 
 export function DataTable<T>({
@@ -74,6 +86,7 @@ export function DataTable<T>({
   caption,
   skeletonRows = 5,
   className,
+  contorno,
   rowClassName,
 }: DataTableProps<T>) {
   const linhas = data ?? [];
@@ -97,17 +110,22 @@ export function DataTable<T>({
   }
 
   const tabela = (
-    <div className="w-full overflow-x-auto">
+    <div
+      className={cn(
+        'w-full overflow-x-auto',
+        contorno && 'rounded-lg border border-borda bg-superficie',
+      )}
+    >
       <table className="w-full min-w-max border-collapse text-sm md:min-w-0">
         {caption ? <caption className="sr-only">{caption}</caption> : null}
         <thead>
-          <tr className="border-b border-borda text-xs text-zinc-500">
+          <tr className="border-b border-borda text-zinc-500">
             {columns.map((col) => (
               <th
                 key={col.id}
                 scope="col"
                 className={cn(
-                  'px-3 py-2 font-medium whitespace-nowrap',
+                  'px-3 py-2.5 whitespace-nowrap rotulo',
                   alinhamento(col),
                   col.hideBelow && HIDE_BELOW[col.hideBelow],
                   col.className,
@@ -117,7 +135,7 @@ export function DataTable<T>({
               </th>
             ))}
             {rowActions ? (
-              <th scope="col" className="w-12 px-3 py-2">
+              <th scope="col" className="w-10 px-2 py-2.5">
                 <span className="sr-only">Ações</span>
               </th>
             ) : null}
@@ -126,23 +144,23 @@ export function DataTable<T>({
         <tbody>
           {isLoading
             ? Array.from({ length: skeletonRows }, (_, i) => (
-                <tr key={`sk-${i}`} className="border-b border-borda" aria-hidden="true">
-                  {columns.map((col) => (
+                <tr key={`sk-${i}`} className="border-b border-linha" aria-hidden="true">
+                  {columns.map((col, c) => (
                     <td
                       key={col.id}
-                      className={cn('px-3 py-3', col.hideBelow && HIDE_BELOW[col.hideBelow])}
+                      className={cn('px-3 py-2.5', col.hideBelow && HIDE_BELOW[col.hideBelow])}
                     >
-                      <Skeleton className="h-4 w-full max-w-40" />
+                      <Skeleton className={skeletonClasse(col, c)} />
                     </td>
                   ))}
-                  {rowActions ? <td className="px-3 py-3" /> : null}
+                  {rowActions ? <td className="px-2 py-2.5" /> : null}
                 </tr>
               ))
             : linhas.map((row, index) => (
                 <tr
                   key={rowKey(row, index)}
                   className={cn(
-                    'border-b border-borda last:border-0',
+                    'group border-b border-linha transition-colors last:border-0',
                     onRowClick && 'cursor-pointer hover:bg-zinc-50',
                     rowClassName?.(row),
                   )}
@@ -152,8 +170,9 @@ export function DataTable<T>({
                     <td
                       key={col.id}
                       className={cn(
-                        'px-3 py-3 align-middle',
+                        'px-3 py-2.5 align-middle',
                         alinhamento(col),
+                        (col.numeric || col.align === 'right') && 'font-medium whitespace-nowrap',
                         col.hideBelow && HIDE_BELOW[col.hideBelow],
                         col.className,
                       )}
@@ -162,8 +181,12 @@ export function DataTable<T>({
                     </td>
                   ))}
                   {rowActions ? (
-                    <td className="px-2 py-2 text-right" onClick={(e) => e.stopPropagation()}>
-                      {rowActions(row)}
+                    <td className="px-2 py-1.5 text-right" onClick={(e) => e.stopPropagation()}>
+                      {/* As ações ficam discretas até o mouse (ou o teclado) chegar na linha —
+                          continuam sempre visíveis e clicáveis, só perdem peso visual. */}
+                      <div className="opacity-55 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
+                        {rowActions(row)}
+                      </div>
                     </td>
                   ) : null}
                 </tr>
@@ -171,8 +194,8 @@ export function DataTable<T>({
         </tbody>
         {footer ? (
           <tfoot>
-            <tr className="border-t border-borda bg-zinc-50 text-sm font-medium">
-              <td colSpan={totalColunas} className="px-3 py-2">
+            <tr className="border-t-2 border-borda text-sm font-semibold">
+              <td colSpan={totalColunas} className="px-3 py-2.5">
                 {footer}
               </td>
             </tr>
@@ -187,23 +210,26 @@ export function DataTable<T>({
   return (
     <div className={className}>
       <div className="hidden md:block">{tabela}</div>
-      <div className="md:hidden">
+      {/* No mobile a mesma informação vira lista contínua — um contorno só, linhas divididas por
+          um fio. Cartões soltos (borda + sombra por item) empilham chrome e afastam os valores
+          uns dos outros, o que dificulta comparar linha a linha. */}
+      <div className="overflow-hidden rounded-lg border border-borda bg-superficie md:hidden">
         {isLoading ? (
-          <ul className="space-y-2" aria-hidden="true">
+          <ul className="divide-y divide-linha" aria-hidden="true">
             {Array.from({ length: Math.min(skeletonRows, 4) }, (_, i) => (
-              <li key={i} className="rounded-lg border border-borda bg-superficie p-3">
-                <Skeleton className="mb-2 h-4 w-2/3" />
-                <Skeleton className="h-4 w-1/3" />
+              <li key={i} className="px-3 py-3">
+                <Skeleton className="mb-2 h-3.5 w-2/3" />
+                <Skeleton className="h-3.5 w-1/3" />
               </li>
             ))}
           </ul>
         ) : (
-          <ul className="space-y-2" aria-label={caption}>
+          <ul className="divide-y divide-linha" aria-label={caption}>
             {linhas.map((row, index) => (
               <li
                 key={rowKey(row, index)}
                 className={cn(
-                  'flex items-start gap-2 rounded-lg border border-borda bg-superficie p-3',
+                  'flex items-start gap-2 px-3 py-3',
                   onRowClick && 'cursor-pointer active:bg-zinc-50',
                   rowClassName?.(row),
                 )}
@@ -226,7 +252,7 @@ export function DataTable<T>({
           </ul>
         )}
         {footer && !isLoading ? (
-          <div className="mt-2 rounded-lg bg-zinc-50 px-3 py-2 text-sm font-medium">{footer}</div>
+          <div className="border-t-2 border-borda px-3 py-2.5 text-sm font-semibold">{footer}</div>
         ) : null}
       </div>
     </div>

@@ -17,7 +17,7 @@ export function Checkbox({ className, label, descricao, id, ...props }: Checkbox
     <CheckboxPrimitive.Root
       id={inputId}
       className={cn(
-        'peer flex size-5 shrink-0 items-center justify-center rounded border border-zinc-400 bg-superficie shadow-xs transition-colors data-[state=checked]:border-primary-600 data-[state=checked]:bg-primary-600 data-[state=checked]:text-white data-[state=indeterminate]:border-primary-600 data-[state=indeterminate]:bg-primary-600 data-[state=indeterminate]:text-white disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-perigo-500',
+        'peer flex size-5 shrink-0 items-center justify-center rounded border border-zinc-400 bg-superficie shadow-xs transition-colors data-[state=checked]:border-acento-600 data-[state=checked]:bg-acento-600 data-[state=checked]:text-white data-[state=indeterminate]:border-acento-600 data-[state=indeterminate]:bg-acento-600 data-[state=indeterminate]:text-white disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-perigo-500',
         className,
       )}
       {...props}

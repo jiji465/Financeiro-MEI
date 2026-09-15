@@ -136,7 +136,7 @@ function EtapaUpload({
 
   return (
     <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-borda bg-superficie px-4 py-12 text-center">
-      <span className="flex size-14 items-center justify-center rounded-full bg-primary-50 text-primary-700">
+      <span className="flex size-14 items-center justify-center rounded-full bg-zinc-100 text-zinc-500">
         <FileUp aria-hidden="true" className="size-7" />
       </span>
       <div>
@@ -732,7 +732,7 @@ export function ImportarCsvPage() {
           {ETAPAS.map((e, i) => (
             <span
               key={e.id}
-              className={i <= indiceEtapa ? 'font-medium text-primary-700' : undefined}
+              className={i <= indiceEtapa ? 'font-medium text-acento-700' : undefined}
             >
               {e.label}
             </span>

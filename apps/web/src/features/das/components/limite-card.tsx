@@ -66,7 +66,12 @@ function Linha({ rotulo, valor, destaque }: { rotulo: string; valor: string; des
   return (
     <div className="flex items-baseline justify-between gap-3">
       <dt className="text-sm text-zinc-500">{rotulo}</dt>
-      <dd className={cn('text-sm tabular-nums', destaque ? 'font-semibold' : 'font-medium')}>
+      <dd
+        className={cn(
+          'text-right text-sm valor',
+          destaque ? 'font-semibold text-texto' : 'font-medium text-zinc-700',
+        )}
+      >
         {valor}
       </dd>
     </div>
@@ -84,7 +89,7 @@ export function LimiteCard({ ano, compacto = false, className }: LimiteCardProps
       <CardHeader className="flex-row items-start justify-between gap-3">
         <div>
           <CardTitle className="flex items-center gap-2">
-            <Gauge className="size-4 text-primary-700" aria-hidden="true" />
+            <Gauge className="size-4 text-zinc-400" aria-hidden="true" />
             Limite anual {anoConsulta}
           </CardTitle>
           {!compacto ? (
@@ -143,11 +148,21 @@ function LimiteConteudo({
   return (
     <div className="space-y-4">
       <div>
-        <div className="mb-1 flex items-baseline justify-between">
-          <span className="text-2xl font-bold tracking-tight tabular-nums">
+        {/* O número grande é o quanto já foi faturado (é isso que o MEI acompanha); o limite
+            vem logo ao lado como referência e o percentual fica à direita, alinhado com a
+            ponta da barra que ele descreve. */}
+        <p className="text-zinc-500 rotulo">Faturado em {limite.ano}</p>
+        <div className="mt-1 mb-2 flex flex-wrap items-baseline gap-x-2">
+          <span className="text-2xl font-semibold valor">{formatBRL(limite.acumulado)}</span>
+          <span className="text-sm text-zinc-500">de {formatBRL(limite.limite)}</span>
+          <span
+            className={cn(
+              'ml-auto text-sm font-semibold valor',
+              limite.percentual >= 85 ? 'text-despesa-700' : 'text-zinc-600',
+            )}
+          >
             {formatPercentual(limite.percentual)}
           </span>
-          <span className="text-xs text-zinc-500">do limite de {formatBRL(limite.limite)}</span>
         </div>
         <Progress
           value={limite.percentual}
@@ -159,12 +174,10 @@ function LimiteConteudo({
       </div>
 
       <dl className="space-y-1.5">
-        <Linha rotulo="Faturado no ano" valor={formatBRL(limite.acumulado)} destaque />
-        <Linha rotulo="Limite" valor={formatBRL(limite.limite)} />
         {limite.valorExcedido > 0 ? (
           <Linha rotulo="Excedido" valor={formatBRL(limite.valorExcedido)} destaque />
         ) : (
-          <Linha rotulo="Restante" valor={formatBRL(limite.restante)} />
+          <Linha rotulo="Ainda pode faturar" valor={formatBRL(limite.restante)} destaque />
         )}
         {mostrarProjecao ? <Linha rotulo="Projeção para dezembro" valor={projecaoTexto} /> : null}
         {!compacto ? <Linha rotulo="Média mensal" valor={formatBRL(limite.mediaMensal)} /> : null}
@@ -193,7 +206,7 @@ function LimiteConteudo({
           {formatData(hojeSP())} ({limite.diasDecorridos} de {limite.diasTotais} dias).{' '}
           <Link
             to="/configuracoes?aba=preferencias"
-            className="text-primary-700 underline-offset-4 hover:underline"
+            className="text-acento-700 underline-offset-4 hover:underline"
           >
             Alterar regime
           </Link>

@@ -100,7 +100,7 @@ export function Combobox({
             aria-haspopup="listbox"
             disabled={disabled}
             className={cn(
-              'flex h-11 w-full items-center justify-between gap-2 rounded-md border border-borda bg-superficie px-3 py-2 text-left text-base shadow-xs transition-colors focus-visible:border-primary-500 focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-primary-500/40 disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:border-perigo-500 md:h-10 md:text-sm',
+              'flex h-11 w-full items-center justify-between gap-2 rounded-md border border-borda bg-superficie px-3 py-2 text-left text-base shadow-xs transition-colors focus-visible:border-acento-500 focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-acento-500/35 disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:border-perigo-500 md:h-10 md:text-sm',
               !selecionada && 'text-zinc-400',
               clearable && selecionada && 'pr-16',
             )}
@@ -176,7 +176,7 @@ export function Combobox({
                 forceMount
                 onSelect={() => void criar()}
                 disabled={criando}
-                className="relative mt-1 flex min-h-10 cursor-default items-center gap-2 rounded-md border-t border-borda px-2 py-2 text-sm text-primary-700 outline-none select-none data-[selected=true]:bg-primary-50"
+                className="relative mt-1 flex min-h-10 cursor-default items-center gap-2 rounded-md border-t border-borda px-2 py-2 text-sm text-acento-700 outline-none select-none data-[selected=true]:bg-acento-50"
               >
                 {criando ? (
                   <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />

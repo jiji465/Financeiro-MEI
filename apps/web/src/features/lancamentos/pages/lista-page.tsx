@@ -22,6 +22,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Combobox } from '@/components/ui/combobox';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
@@ -246,11 +247,17 @@ export function LancamentosListaPage() {
         titulo="Lançamentos"
         descricao="Suas receitas e despesas, uma por uma."
         acoes={
+          // Uma ação primária só. "Nova despesa" é tão frequente quanto "Nova receita", mas dois
+          // botões cheios lado a lado anulam a hierarquia — o secundário neutro resolve.
           <>
-            <Button variant="outline" asChild>
+            <Button variant="ghost" asChild>
               <Link to="/relatorios/importar">Importar CSV</Link>
             </Button>
-            <Button icon={<Plus aria-hidden="true" />} onClick={() => patch({ novo: 'despesa' })}>
+            <Button
+              variant="secondary"
+              icon={<Plus aria-hidden="true" />}
+              onClick={() => patch({ novo: 'despesa' })}
+            >
               Nova despesa
             </Button>
             <Button icon={<Plus aria-hidden="true" />} onClick={() => patch({ novo: 'receita' })}>
@@ -259,8 +266,13 @@ export function LancamentosListaPage() {
           </>
         }
       >
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {/* Um painel só, com fios divisórios, em vez de três cards soltos: são três leituras do
+            mesmo período e o saldo é a conclusão das outras duas. */}
+        <Card className="grid gap-px overflow-hidden bg-borda sm:grid-cols-3">
           <StatCard
+            semCard
+            className="bg-superficie p-4"
+            tamanho="sm"
             titulo="Receitas pagas"
             valor={formatBRL(resumo.data?.receitas.pagos ?? 0)}
             tone="receita"
@@ -268,6 +280,9 @@ export function LancamentosListaPage() {
             loading={resumo.isPending}
           />
           <StatCard
+            semCard
+            className="bg-superficie p-4"
+            tamanho="sm"
             titulo="Despesas pagas"
             valor={formatBRL(resumo.data?.despesas.pagos ?? 0)}
             tone="despesa"
@@ -275,13 +290,15 @@ export function LancamentosListaPage() {
             loading={resumo.isPending}
           />
           <StatCard
+            semCard
+            className="bg-superficie p-4"
             titulo="Saldo do período"
             valor={formatBRL(resumo.data?.saldo ?? 0)}
-            tone="primary"
+            tone={(resumo.data?.saldo ?? 0) < 0 ? 'despesa' : 'neutral'}
             rodape="Receitas pagas − despesas pagas"
             loading={resumo.isPending}
           />
-        </div>
+        </Card>
 
         <PeriodoSelect
           value={periodo}
@@ -391,7 +408,7 @@ export function LancamentosListaPage() {
             </div>
           </div>
         )}
-        className="rounded-lg border border-borda bg-superficie md:p-2"
+        contorno
       />
 
       {meta ? (

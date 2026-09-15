@@ -67,13 +67,13 @@ export function AnexoCampo({ lancamentoId, anexo }: AnexoCampoProps) {
       />
       {anexo ? (
         <div className="flex items-center gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-700">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500">
             <FileText aria-hidden="true" className="size-5" />
           </span>
           <div className="min-w-0 flex-1">
             <button
               type="button"
-              className="truncate text-sm font-medium text-primary-700 hover:underline"
+              className="truncate text-sm font-medium text-acento-700 hover:underline"
               onClick={() => void baixarDaApi(`/lancamentos/${lancamentoId}/anexo`, anexo.nome)}
             >
               {anexo.nome}

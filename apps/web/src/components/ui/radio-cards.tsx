@@ -66,7 +66,7 @@ export function RadioCards<V extends string = string>({
             key={o.value}
             htmlFor={itemId}
             className={cn(
-              'flex cursor-pointer items-start gap-3 rounded-lg border border-borda bg-superficie p-3 transition-colors hover:border-primary-300 has-[[data-state=checked]]:border-primary-600 has-[[data-state=checked]]:bg-primary-50 has-[[data-disabled]]:cursor-not-allowed has-[[data-disabled]]:opacity-60 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary-600',
+              'flex cursor-pointer items-start gap-3 rounded-lg border border-borda bg-superficie p-3 transition-colors hover:border-acento-300 has-[[data-state=checked]]:border-acento-600 has-[[data-state=checked]]:bg-acento-50 has-[[data-disabled]]:cursor-not-allowed has-[[data-disabled]]:opacity-60 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-acento-600',
               aria['aria-invalid'] && 'border-perigo-500',
             )}
           >
@@ -74,12 +74,12 @@ export function RadioCards<V extends string = string>({
               id={itemId}
               value={o.value}
               disabled={o.disabled}
-              className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border border-zinc-400 bg-superficie outline-none data-[state=checked]:border-primary-600"
+              className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border border-zinc-400 bg-superficie outline-none data-[state=checked]:border-acento-600"
             >
-              <RadioGroupPrimitive.Indicator className="size-2.5 rounded-full bg-primary-600" />
+              <RadioGroupPrimitive.Indicator className="size-2.5 rounded-full bg-acento-600" />
             </RadioGroupPrimitive.Item>
             {o.icone ? (
-              <span className="mt-0.5 text-primary-700 [&_svg]:size-5">{o.icone}</span>
+              <span className="mt-0.5 text-zinc-500 [&_svg]:size-5">{o.icone}</span>
             ) : null}
             <span className="flex min-w-0 flex-col gap-0.5">
               <span className="text-sm leading-5 font-medium">{o.label}</span>

@@ -21,21 +21,27 @@ const ATALHOS: Atalho[] = [
 const TONE_CLASS: Record<Atalho['tone'], string> = {
   receita: 'bg-receita-50 text-receita-700',
   despesa: 'bg-despesa-50 text-despesa-700',
-  primary: 'bg-primary-50 text-primary-800',
-  neutral: 'bg-zinc-100 text-zinc-700',
+  primary: 'bg-zinc-100 text-zinc-500',
+  neutral: 'bg-zinc-100 text-zinc-500',
 };
 
 export function Atalhos() {
   return (
-    <nav aria-label="Atalhos" className="flex flex-wrap gap-2">
+    // Rola na horizontal no celular em vez de quebrar em duas linhas de pílulas: mantém os
+    // atalhos numa faixa só, previsível, sem empurrar o conteúdo abaixo pra fora da dobra.
+    <nav
+      aria-label="Atalhos"
+      className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 scrollbar-fina md:mx-0 md:flex-wrap md:px-0 md:pb-0"
+    >
       {ATALHOS.map((a) => (
         <Link
           key={a.to}
           to={a.to}
-          className="flex items-center gap-2 rounded-full border border-borda bg-superficie py-1.5 pr-3.5 pl-2 text-sm font-medium text-texto shadow-xs transition-colors hover:bg-zinc-50"
+          className="flex shrink-0 items-center gap-2 rounded-full border border-borda bg-superficie py-1.5 pr-3.5 pl-1.5 text-sm font-medium text-zinc-700 transition-colors hover:border-borda-forte hover:bg-zinc-50 hover:text-texto"
         >
           <span
             className={`flex size-6 items-center justify-center rounded-full ${TONE_CLASS[a.tone]}`}
+            aria-hidden="true"
           >
             <a.icone className="size-3.5" />
           </span>

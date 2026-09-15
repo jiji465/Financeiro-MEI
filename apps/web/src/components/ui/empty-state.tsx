@@ -24,17 +24,21 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center rounded-lg border border-dashed border-borda px-4 text-center',
-        compacto ? 'py-6' : 'py-12',
+        'flex flex-col items-center justify-center rounded-lg border border-dashed border-borda bg-superficie/60 px-4 text-center',
+        compacto ? 'py-7' : 'py-14',
         className,
       )}
     >
-      <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-primary-50 text-primary-600 [&_svg]:size-6">
+      {/* O ícone do estado vazio é orientação, não destaque: fica em cinza pra não competir com
+          o botão de ação, que é a única coisa colorida do bloco. */}
+      <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-zinc-100 text-zinc-400 [&_svg]:size-5">
         {icone ?? <Inbox aria-hidden="true" />}
       </div>
-      <h3 className="text-base font-semibold">{titulo}</h3>
-      {descricao ? <p className="mt-1 max-w-sm text-sm text-zinc-500">{descricao}</p> : null}
-      {acao ? <div className="mt-4">{acao}</div> : null}
+      <h3 className="text-[0.9375rem] font-semibold text-texto">{titulo}</h3>
+      {descricao ? (
+        <p className="mt-1 max-w-sm text-sm leading-relaxed text-zinc-500">{descricao}</p>
+      ) : null}
+      {acao ? <div className="mt-5">{acao}</div> : null}
     </div>
   );
 }

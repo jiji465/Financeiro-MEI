@@ -2,7 +2,7 @@
 // próximos vencimentos, alertas e atalhos.
 import { Navigate } from 'react-router';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { AlertasList, LimiteCard } from '@/features/das';
 import { useMei } from '@/features/referencias';
@@ -38,11 +38,16 @@ function DashboardPageConteudo() {
       <PageHeader
         titulo={primeiroNome ? `Olá, ${primeiroNome}` : 'Visão geral'}
         descricao="Resumo financeiro do seu MEI neste mês."
-        acoes={<Atalhos />}
       />
 
-      <div className="space-y-4">
-        <AlertasList maxItens={3} compacto />
+      {/* Ordem de leitura, do mais acionável ao mais contextual:
+          1. alertas (só aparecem se existirem — "tudo em dia" não merece ocupar o topo);
+          2. o resumo do mês, com o saldo como número principal;
+          3. atalhos das ações do dia a dia;
+          4. o que exige ação num prazo: vencimentos e limite anual;
+          5. histórico e composição — informação de acompanhamento, não de decisão imediata. */}
+      <div className="space-y-4 md:space-y-5">
+        <AlertasList maxItens={3} compacto ocultarSeVazio />
 
         <ResumoCards
           resumo={resumo.data}
@@ -52,10 +57,33 @@ function DashboardPageConteudo() {
           onRetry={() => void resumo.refetch()}
         />
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
+        <Atalhos />
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-5 md:gap-5">
+          <Card className="lg:col-span-3">
             <CardHeader>
-              <CardTitle>Receitas x despesas (12 meses)</CardTitle>
+              <CardTitle>Próximos vencimentos</CardTitle>
+              <CardDescription>DAS e contas dos próximos 30 dias.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ProximosVencimentos
+                itens={resumo.data?.proximosVencimentos}
+                loading={resumo.isPending}
+                isError={resumo.isError}
+                error={resumo.error}
+                onRetry={() => void resumo.refetch()}
+              />
+            </CardContent>
+          </Card>
+
+          <LimiteCard compacto className="lg:col-span-2" />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-5 md:gap-5">
+          <Card className="lg:col-span-3">
+            <CardHeader>
+              <CardTitle>Receitas x despesas</CardTitle>
+              <CardDescription>Últimos 12 meses.</CardDescription>
             </CardHeader>
             <CardContent>
               <ComparativoChart
@@ -68,13 +96,10 @@ function DashboardPageConteudo() {
             </CardContent>
           </Card>
 
-          <LimiteCard compacto />
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <Card>
+          <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>Despesas por categoria</CardTitle>
+              <CardDescription>No período selecionado.</CardDescription>
             </CardHeader>
             <CardContent>
               <CategoriaDonut
@@ -83,21 +108,6 @@ function DashboardPageConteudo() {
                 isError={porCategoria.isError}
                 error={porCategoria.error}
                 onRetry={() => void porCategoria.refetch()}
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Próximos vencimentos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ProximosVencimentos
-                itens={resumo.data?.proximosVencimentos}
-                loading={resumo.isPending}
-                isError={resumo.isError}
-                error={resumo.error}
-                onRetry={() => void resumo.refetch()}
               />
             </CardContent>
           </Card>
