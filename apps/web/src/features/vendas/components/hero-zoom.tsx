@@ -58,11 +58,12 @@ export function HeroZoom() {
       <div className="sticky top-16 flex h-[calc(100dvh-4rem)] flex-col items-center justify-center overflow-hidden bg-fundo px-4 md:px-8">
         <div ref={textoRef} className="relative z-10 mb-6 max-w-2xl text-center md:mb-8">
           <h1 className="font-display text-4xl font-semibold tracking-tight text-texto md:text-5xl lg:text-6xl">
-            O financeiro do seu MEI, <span className="text-acento-700">sem sustos</span>
+            Quanto <span className="text-acento-700">sobrou</span> pra você esse mês?
           </h1>
-          <p className="mx-auto mt-5 max-w-md text-base text-zinc-600 md:text-lg">
-            Lançamentos, DAS, limite anual e relatórios — pensado para quem abre um MEI e quer saber
-            exatamente quanto entra, quanto sai e o que falta pagar.
+          <p className="mx-auto mt-5 max-w-lg text-base text-zinc-600 md:text-lg">
+            Se a resposta é &ldquo;não sei direito&rdquo;, é pra isso que o MEI Financeiro existe.
+            Você registra o que entra e o que sai; ele mostra quanto sobra, avisa do DAS antes de
+            vencer e acompanha o seu limite anual.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button asChild size="lg">
@@ -73,8 +74,8 @@ export function HeroZoom() {
             </Button>
           </div>
           <p className="mt-3 text-xs text-zinc-500">
-            O acesso não é aberto: você preenche seus dados e entramos em contato para liberar sua
-            conta.
+            Sem cadastro automático: a gente conversa com você e entrega a conta já configurada pro
+            seu MEI.
           </p>
         </div>
 

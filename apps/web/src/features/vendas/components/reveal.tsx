@@ -25,15 +25,22 @@ export function Reveal({ children, className, atraso = 0 }: RevealProps) {
     if (visivel) return;
     const el = ref.current;
     if (!el) return;
+
+    // A margem superior gigante é proposital: sem ela, num salto de scroll (roda rápida, âncora,
+    // restaurar posição) o elemento vai de "abaixo da dobra" direto pra "acima da tela" com a
+    // proporção visível sempre em 0 — o observer nunca dispara e o bloco fica invisível pra
+    // sempre. Esticando a área observada pra cima, "já passou do topo" também conta como visto.
+    // A margem inferior negativa mantém o comportamento desejado na entrada: só revela quando o
+    // bloco realmente entrou na tela, não quando está encostando na borda de baixo.
     const observer = new IntersectionObserver(
       ([entrada]) => {
-        if (entrada?.isIntersecting) {
-          setVisivel(true);
-          observer.disconnect();
-        }
+        if (!entrada?.isIntersecting) return;
+        observer.disconnect();
+        setVisivel(true);
       },
-      { threshold: 0.15, rootMargin: '0px 0px -8% 0px' },
+      { threshold: 0.15, rootMargin: '9999px 0px -8% 0px' },
     );
+
     observer.observe(el);
     return () => observer.disconnect();
   }, [visivel]);
