@@ -2,91 +2,13 @@
 // asset de imagem no projeto), são miniaturas construídas com o próprio design system, com dados
 // de exemplo. Mesma técnica usada por produtos como Linear/Stripe em vez de captura de tela real:
 // fica nítido em qualquer resolução e sempre consistente com a marca.
-import { ArrowUpRight, Check, Download, Gauge, TrendingUp } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { ArrowUpRight, Check, Download } from 'lucide-react';
+import { type ReactNode } from 'react';
 
 import { Badge } from '@/components/ui/badge';
-import { NumeroAnimado } from '@/components/ui/numero-animado';
-import { formatBRL } from '@/lib/format/money';
 import { cn } from '@/lib/utils/cn';
 
-const BARRAS_EXEMPLO = [38, 52, 45, 70, 58, 82, 64, 90];
 const LIMITE_PCT_EXEMPLO = 42;
-
-// Nome em inglês ("use...") por exigência do eslint-plugin-react-hooks — é o único jeito dele
-// reconhecer isto como hook e aplicar as regras de hooks corretamente.
-function useEntradaAnimada() {
-  const [entrou, setEntrou] = useState(false);
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => setEntrou(true));
-    return () => cancelAnimationFrame(frame);
-  }, []);
-  return entrou;
-}
-
-/** Conteúdo do mockup do painel, sem moldura própria — encaixa na "tela" do computador do hero
- * (`HeroZoom`), que é onde ele aparece hoje. */
-export function PainelPreviewConteudo({ className }: { className?: string }) {
-  const entrou = useEntradaAnimada();
-  return (
-    <div className={className}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs text-texto-suave">Olá, Ateliê Criativo 👋</p>
-          <p className="font-display text-sm font-semibold text-texto">Setembro de 2026</p>
-        </div>
-        <span className="flex size-8 items-center justify-center rounded-full bg-primary-50 text-primary-700">
-          <Gauge className="size-4" aria-hidden="true" />
-        </span>
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="rounded-lg bg-receita-50 p-2.5">
-          <p className="text-[11px] text-receita-700">Sobrou no mês</p>
-          <p className="flex items-center gap-1 text-base font-bold tabular-nums text-receita-700">
-            <NumeroAnimado valor={402595} formatar={(v) => formatBRL(v)} />
-            <TrendingUp className="size-3.5" aria-hidden="true" />
-          </p>
-        </div>
-        <div className="rounded-lg bg-alerta-50 p-2.5">
-          <p className="text-[11px] text-alerta-700">A pagar essa semana</p>
-          <p className="text-base font-bold tabular-nums text-alerta-700">
-            <NumeroAnimado valor={152200} formatar={(v) => formatBRL(v)} />
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 flex h-16 items-end gap-1.5">
-        {BARRAS_EXEMPLO.map((altura, i) => (
-          <div
-            key={i}
-            className="flex-1 rounded-t-sm bg-linear-to-t from-primary-600 to-acento-500 transition-[height] duration-700 ease-out"
-            style={{
-              height: entrou ? `${altura}%` : '0%',
-              transitionDelay: `${i * 40}ms`,
-              opacity: 0.55 + (i / BARRAS_EXEMPLO.length) * 0.45,
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="mt-4 border-t border-borda pt-3">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-texto-suave">Limite anual de faturamento</span>
-          <span className="font-semibold text-texto">
-            <NumeroAnimado valor={LIMITE_PCT_EXEMPLO} formatar={(v) => `${Math.round(v)}%`} />
-          </span>
-        </div>
-        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-zinc-100">
-          <div
-            className="h-full rounded-full bg-primary-600 transition-[width] duration-700 ease-out"
-            style={{ width: entrou ? `${LIMITE_PCT_EXEMPLO}%` : '0%' }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /** Moldura comum dos mockups da vitrine (card flutuante com título). */
 function MolduraMockup({ titulo, children }: { titulo: string; children: ReactNode }) {

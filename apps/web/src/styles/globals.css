@@ -157,6 +157,27 @@
   /* Skeleton: varredura suave em vez de piscar (pulse) — menos cansativo em telas com muitas
    * linhas carregando ao mesmo tempo. */
   --animate-brilho: brilho 1.8s ease-in-out infinite;
+  /* Reflexo que atravessa a tela do notebook no hero da página de vendas (faixa branca inclinada,
+   * uma passada a cada 7,5s). Único acréscimo necessário: é o vidro do aparelho, não um estado de
+   * componente — e um keyframe só existe se estiver declarado no tema. */
+  --animate-varredura: varredura 7.5s cubic-bezier(0.4, 0, 0.6, 1) 2.6s infinite;
+
+  @keyframes varredura {
+    0% {
+      transform: translateX(-120%) skewX(-18deg);
+      opacity: 0;
+    }
+    12% {
+      opacity: 1;
+    }
+    55% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(320%) skewX(-18deg);
+      opacity: 0;
+    }
+  }
 
   @keyframes brilho {
     from {
