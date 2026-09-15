@@ -108,6 +108,70 @@ export function percentualBp(valor: Centavos, bp: BasisPoints): Centavos {
 /** Alias curto de percentualBp: bp(162100, 500) = 8105. */
 export const bp = percentualBp;
 
+/**
+ * Quantidade de um item de venda em MILÉSIMOS de unidade, sempre inteira: 1 un = 1000,
+ * 1,5 kg = 1500, 0,25 h = 250. O projeto não usa float nem `numeric` para dinheiro e a mesma
+ * disciplina vale aqui — 0,1 + 0,2 ≠ 0,3 em ponto flutuante, e uma venda de 3 bolos não pode
+ * depender disso.
+ */
+export type Milesimos = number;
+
+/** 1 unidade em milésimos (fator de conversão quantidade → unidades). */
+export const MILESIMOS_POR_UNIDADE = 1000;
+
+/**
+ * Total de um item de venda: quantidade (milésimos) × valor unitário (centavos) ÷ 1000,
+ * arredondado half-up (meio para cima) ao centavo.
+ *
+ * A conta é feita só com inteiros — `Math.floor(produto / 1000)` mais o resto de `% 1000` —
+ * porque `produto / 1000` é uma divisão em ponto flutuante e arredondar o resultado dela
+ * erraria o centavo em casos de meio exato (0,5 que vira 0,49999…). Exemplo do dia a dia:
+ * 1,5 kg (1500) a R$ 10,33 (1033) = 1.549,5 centavos → R$ 15,50, não R$ 15,49.
+ *
+ * Só aceita inteiros não negativos: quantidade e preço de item de venda nunca são negativos
+ * (devolução é outro lançamento, não item com sinal trocado).
+ */
+export function totalDoItem(quantidade: Milesimos, valorUnitario: Centavos): Centavos {
+  assertCentavos(valorUnitario, 'valorUnitario');
+  if (!Number.isSafeInteger(quantidade) || quantidade < 0) {
+    throw new TypeError(`quantidade deve ser um inteiro em milésimos (recebido: ${quantidade})`);
+  }
+  if (valorUnitario < 0) throw new TypeError('valorUnitario não pode ser negativo');
+  const produto = quantidade * valorUnitario;
+  if (!Number.isSafeInteger(produto)) {
+    throw new TypeError('quantidade × valor unitário estourou o inteiro seguro');
+  }
+  const inteiro = Math.floor(produto / MILESIMOS_POR_UNIDADE);
+  const resto = produto % MILESIMOS_POR_UNIDADE;
+  return resto >= MILESIMOS_POR_UNIDADE / 2 ? inteiro + 1 : inteiro;
+}
+
+/** Formata milésimos como quantidade legível: 1500 → "1,5"; 3000 → "3"; 250 → "0,25". */
+export function formatQuantidade(quantidade: Milesimos): string {
+  const negativo = quantidade < 0;
+  const abs = Math.abs(quantidade);
+  const inteiro = Math.trunc(abs / MILESIMOS_POR_UNIDADE);
+  const fracao = String(abs % MILESIMOS_POR_UNIDADE)
+    .padStart(3, '0')
+    .replace(/0+$/, '');
+  const texto = fracao ? `${inteiro},${fracao}` : String(inteiro);
+  return negativo ? `-${texto}` : texto;
+}
+
+/**
+ * Converte texto digitado ("1,5", "1.5", "3") em milésimos. Null quando não é número válido.
+ * Mais de três casas decimais são truncadas (não existe meio-milésimo de unidade).
+ */
+export function parseQuantidade(texto: string): Milesimos | null {
+  if (typeof texto !== 'string') return null;
+  const limpo = texto.replace(/\s/g, '').replace(',', '.');
+  if (limpo === '' || !/^\d+(\.\d*)?$/.test(limpo)) return null;
+  const [inteiros = '0', decimais = ''] = limpo.split('.');
+  const milesimos =
+    Number(inteiros) * MILESIMOS_POR_UNIDADE + Number((decimais + '000').slice(0, 3));
+  return Number.isSafeInteger(milesimos) ? milesimos : null;
+}
+
 /** Percentual (0-100, duas casas) que `parte` representa de `total`; 0 quando total é 0. */
 export function percentualDe(parte: Centavos, total: Centavos): number {
   if (total === 0) return 0;

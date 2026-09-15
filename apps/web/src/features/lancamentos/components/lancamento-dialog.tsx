@@ -1,6 +1,11 @@
 // Diálogo de lançamento: criação (?novo=receita|despesa) e edição (?editar=<id>). Origem
 // das/baixa: só descrição/observações ficam editáveis (o resto é bloqueado — ver service.atualizar
 // da API). Recorrência (switch "Repetir todo mês") só aparece na criação.
+//
+// Seção "Itens" (opcional): detalha a venda/compra em linhas do catálogo. Enquanto houver itens,
+// o campo "Valor" é somado a partir deles e fica travado — é a mesma regra que a API cobra
+// (soma dos itens = valor do lançamento), então travar aqui evita um 422 que o dono não teria
+// como resolver na tela.
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   atualizarLancamentoBody,
@@ -18,7 +23,7 @@ import {
   type TipoLancamento,
 } from '@meifin/shared';
 import { Info } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -49,7 +54,9 @@ import { FORMA_PAGAMENTO_LABELS, opcoesDe } from '@/lib/labels';
 
 import { useAtualizarLancamento, useCriarLancamento, useLancamento } from '../hooks';
 import { origemRestrita } from '../utils';
+import { itemFormSchema, montarItensDoBody, somaDosItens, type ItemFormValores } from '../itens';
 import { AnexoCampo } from './anexo-campo';
+import { ItensCampo } from './itens-campo';
 
 const FORMA_PAGAMENTO_OPCOES = opcoesDe(FORMAS_PAGAMENTO, FORMA_PAGAMENTO_LABELS);
 const STATUS_OPCOES = [
@@ -88,6 +95,7 @@ const lancamentoFormSchema = z
       .min(1, 'Dia deve ser entre 1 e 31')
       .max(31, 'Dia deve ser entre 1 e 31'),
     dataFimRecorrencia: isoDate.nullable(),
+    itens: z.array(itemFormSchema),
   })
   .superRefine((v, ctx) => {
     // Repetição sem data final vira lançamento se acumulando pra sempre, e quem cadastrou não
@@ -128,6 +136,11 @@ function valoresIniciais(
       repetir: false,
       diaDoMes: diaDe(lancamento.data),
       dataFimRecorrencia: null,
+      itens: lancamento.itens.map((i) => ({
+        produtoServicoId: i.produtoServicoId,
+        quantidade: i.quantidade,
+        valorUnitario: i.valorUnitario,
+      })),
     };
   }
   return {
@@ -145,6 +158,7 @@ function valoresIniciais(
     repetir: false,
     diaDoMes: diaDe(hoje),
     dataFimRecorrencia: null,
+    itens: [],
   };
 }
 
@@ -164,6 +178,7 @@ function montarCriarBody(v: LancamentoFormValores): CriarLancamentoBody {
     recorrencia: v.repetir
       ? { diaDoMes: v.diaDoMes, dataFim: v.dataFimRecorrencia ?? null }
       : undefined,
+    ...(v.itens.length > 0 ? { itens: montarItensDoBody(v.itens) } : {}),
   };
 }
 
@@ -186,6 +201,8 @@ function montarAtualizarBody(
     status: v.status,
     dataPagamento: v.status === 'pago' ? (v.dataPagamento ?? v.data) : null,
     observacoes: v.observacoes ?? null,
+    // Sempre enviado na edição: `[]` é o que limpa os itens de uma venda que deixou de tê-los.
+    itens: montarItensDoBody(v.itens),
   };
 }
 
@@ -208,9 +225,9 @@ function LancamentoForm({ lancamento, tipoInicial, onClose }: LancamentoFormProp
     defaultValues: valoresIniciais(lancamento, tipoInicial, hojeSP()),
   });
 
-  const [tipo, status, repetir, data] = useWatch({
+  const [tipo, status, repetir, data, itens] = useWatch({
     control: form.control,
-    name: ['tipo', 'status', 'repetir', 'data'],
+    name: ['tipo', 'status', 'repetir', 'data', 'itens'],
   });
   const categorias = useCategorias(tipo);
   const contatos = useContatosOpcoes(tipo === 'receita' ? 'cliente' : 'fornecedor');
@@ -224,6 +241,16 @@ function LancamentoForm({ lancamento, tipoInicial, onClose }: LancamentoFormProp
       tipoAnterior.current = tipo;
     }
   }, [tipo, form]);
+
+  // Havendo itens, o valor do lançamento É a soma deles (a API recusa qualquer outra coisa).
+  const temItens = (itens?.length ?? 0) > 0;
+  const totalItens = useMemo(() => somaDosItens(itens as ItemFormValores[] | undefined), [itens]);
+  useEffect(() => {
+    if (!temItens) return;
+    if (form.getValues('valor') !== totalItens) {
+      form.setValue('valor', totalItens, { shouldDirty: true });
+    }
+  }, [temItens, totalItens, form]);
 
   const onSubmit = (valores: LancamentoFormValores) => {
     if (lancamento) {
@@ -276,7 +303,13 @@ function LancamentoForm({ lancamento, tipoInicial, onClose }: LancamentoFormProp
       />
       <FormInput control={form.control} name="descricao" label="Descrição" autoFocus />
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormMoneyInput control={form.control} name="valor" label="Valor" disabled={bloqueado} />
+        <FormMoneyInput
+          control={form.control}
+          name="valor"
+          label="Valor"
+          disabled={bloqueado || temItens}
+          hint={temItens ? 'Somado a partir dos itens abaixo.' : undefined}
+        />
         <FormDateInput control={form.control} name="data" label="Data" disabled={bloqueado} />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -343,6 +376,16 @@ function LancamentoForm({ lancamento, tipoInicial, onClose }: LancamentoFormProp
           />
         ) : null}
       </div>
+      {!bloqueado ? (
+        <ItensCampo
+          control={form.control}
+          setValue={form.setValue}
+          nome="itens"
+          tipo={tipo}
+          disabled={bloqueado}
+        />
+      ) : null}
+
       <FormTextarea
         control={form.control}
         name="observacoes"

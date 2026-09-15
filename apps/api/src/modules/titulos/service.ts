@@ -141,6 +141,8 @@ function toLancamentoDto(
     competencia: l.competencia ? l.competencia.slice(0, 7) : null,
     parcelaId: l.parcelaId,
     importacaoId: l.importacaoId,
+    // Baixa de parcela nunca é venda de catálogo: não tem itens.
+    itens: [],
     createdAt: ts(l.createdAt),
     updatedAt: ts(l.updatedAt),
   };

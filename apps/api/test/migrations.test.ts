@@ -22,11 +22,13 @@ const TABELAS_ESPERADAS = [
   'das_pagamentos',
   'dasn_declaracoes',
   'importacoes',
+  'lancamento_itens',
   'lancamentos',
   'notas_fiscais',
   'parametros_mei',
   'parcelas',
   'password_reset_tokens',
+  'produtos_servicos',
   'recorrencias',
   'refresh_tokens',
   'solicitacoes_acesso',
@@ -52,6 +54,7 @@ const ENUMS_ESPERADOS = [
   'tipo_contato',
   'tipo_lancamento',
   'tipo_nota',
+  'tipo_produto_servico',
   'tipo_titulo',
   'user_role',
 ];
@@ -115,6 +118,8 @@ describe('migrações (0000_init)', () => {
     const nomes = fks.map((r) => r.conname);
     expect(nomes).toContain('lancamentos_categoria_fk');
     expect(nomes).toContain('lancamentos_conta_bancaria_fk');
+    expect(nomes).toContain('lancamento_itens_lancamento_fk');
+    expect(nomes).toContain('lancamento_itens_produto_servico_fk');
     expect(nomes).toContain('configuracoes_categoria_das_fk');
     expect(nomes).toContain('parcelas_titulo_fk');
 

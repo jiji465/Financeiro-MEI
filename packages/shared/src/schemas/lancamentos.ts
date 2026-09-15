@@ -29,6 +29,7 @@ import {
   timestamp,
   uuid,
 } from './common.js';
+import { lancamentoItemDto, lancamentoItensInput } from './produtos-servicos.js';
 
 // ---------------------------------------------------------------------------
 // Anexo
@@ -84,6 +85,8 @@ export const lancamentoDto = z.object({
   competencia: competencia.nullable(),
   parcelaId: uuid.nullable(),
   importacaoId: uuid.nullable(),
+  /** Itens do catálogo vendidos/comprados neste lançamento; [] na esmagadora maioria deles. */
+  itens: z.array(lancamentoItemDto),
   createdAt: timestamp,
   updatedAt: timestamp,
 });
@@ -122,6 +125,12 @@ const lancamentoCampos = z.object({
   status: z.enum(STATUS_LANCAMENTO).default('pago'),
   dataPagamento: isoDate.nullable().optional(),
   observacoes: textoNulavel,
+  /**
+   * Itens do catálogo desta venda/compra. Omitido = lançamento sem itens (o caso comum).
+   * Quando vier preenchido, a soma dos totais tem que bater com `valor` — a API recusa com 422
+   * no campo "itens" se não bater (ver produtos-servicos/service.ts).
+   */
+  itens: lancamentoItensInput.optional(),
 });
 
 function validarPagamento(

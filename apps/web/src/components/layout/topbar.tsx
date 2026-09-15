@@ -1,4 +1,13 @@
-import { ChevronDown, LogOut, Plus, Settings, TrendingDown, TrendingUp } from 'lucide-react';
+import {
+  ChevronDown,
+  LogOut,
+  Package,
+  Plus,
+  Settings,
+  TrendingDown,
+  TrendingUp,
+  Wrench,
+} from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router';
 
 import { navItems } from '@/app/registry';
@@ -18,7 +27,14 @@ import {
 import { BrandMark } from './brand';
 import { itemDaRota } from './nav';
 
-/** Barra superior: título da área (desktop), "Novo lançamento" e menu do usuário. */
+/**
+ * Barra superior: título da área (desktop), o menu "Novo" e o menu do usuário.
+ *
+ * O menu "Novo" começou como "Novo lançamento" (só receita/despesa). Com o catálogo, ele passou a
+ * abrigar também "Novo produto" e "Novo serviço" — daí o rótulo curto: um menu chamado "Novo
+ * lançamento" com "Novo produto" dentro seria mentira. Lançamentos continuam em cima, que é o que
+ * o dono faz todo dia; o catálogo vem depois, separado.
+ */
 export function Topbar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -46,7 +62,7 @@ export function Topbar() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className="hidden md:inline-flex" icon={<Plus aria-hidden="true" />}>
-                Novo lançamento
+                Novo
                 <ChevronDown className="-mr-1 opacity-70" aria-hidden="true" />
               </Button>
             </DropdownMenuTrigger>
@@ -58,6 +74,18 @@ export function Topbar() {
               <DropdownMenuItem onSelect={() => navigate('/lancamentos?novo=despesa')}>
                 <TrendingDown className="text-despesa-600!" />
                 Nova despesa
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs font-normal text-zinc-500">
+                Catálogo
+              </DropdownMenuLabel>
+              <DropdownMenuItem onSelect={() => navigate('/produtos-servicos?novo=produto')}>
+                <Package />
+                Novo produto
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => navigate('/produtos-servicos?novo=servico')}>
+                <Wrench />
+                Novo serviço
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -8,11 +8,19 @@ export {
   categoriasParaOpcoes,
   contasBancariasParaOpcoes,
   contatosParaOpcoes,
+  produtosServicosParaOpcoes,
   useCategorias,
   useContasBancariasOpcoes,
   useContatosOpcoes,
   useDasParametros,
   useMei,
+  useProdutosServicosOpcoes,
 } from './hooks';
 export { referenciasKeys } from './keys';
-export type { CategoriaRef, ContaBancariaRef, ContatoRef, DasParametros } from './api';
+export type {
+  CategoriaRef,
+  ContaBancariaRef,
+  ContatoRef,
+  DasParametros,
+  ProdutoServicoRef,
+} from './api';

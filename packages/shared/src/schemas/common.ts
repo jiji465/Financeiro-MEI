@@ -291,3 +291,12 @@ export const contaBancariaRef = z.object({
   tipo: z.string(),
 });
 export type ContaBancariaRef = z.infer<typeof contaBancariaRef>;
+
+/** Produto/serviço resumido embutido no item do lançamento (DTO completo em produtos-servicos). */
+export const produtoServicoRef = z.object({
+  id: uuid,
+  nome: z.string(),
+  tipo: z.string(),
+  unidade: z.string().nullable(),
+});
+export type ProdutoServicoRef = z.infer<typeof produtoServicoRef>;

@@ -7,6 +7,7 @@ import {
   type AtualizarLancamentoBody,
   type CriarLancamentoBody,
   type LancamentoDto,
+  type LancamentoItemDto,
   type ListaLancamentosResponse,
   type ListarLancamentosQuery,
   type PagarLancamentoBody,
@@ -27,6 +28,11 @@ import { isoTimestamp } from '../../lib/hoje.js';
 import { parsePaginacao } from '../../lib/pagination.js';
 import type { ArquivoEntrada, FileStorage } from '../../lib/storage.js';
 import { forTenant, type TenantDb } from '../../lib/tenant-db.js';
+import {
+  itensDoLancamento,
+  itensPorLancamento,
+  sincronizarItens,
+} from '../produtos-servicos/index.js';
 import { criarLancamentoInterno, excluirLancamentoInterno } from './core.js';
 import * as recRepo from './recorrencias.repository.js';
 import { gerarRecorrenciasPendentes, validarReferencias } from './recorrencias.service.js';
@@ -45,7 +51,11 @@ export interface LancamentosCtx {
 const ORIGENS_RESTRITAS = new Set<LancamentoRow['origem']>(['das', 'baixa']);
 const CAMPOS_LIVRES = new Set(['descricao', 'observacoes']);
 
-export function toLancamentoDto(l: repo.LancamentoComRefs): LancamentoDto {
+export function toLancamentoDto(
+  l: repo.LancamentoComRefs,
+  /** Itens do catálogo já carregados; vazio quando o lançamento não é venda de catálogo. */
+  itens: LancamentoItemDto[] = [],
+): LancamentoDto {
   const row = l.lancamento;
   return {
     id: row.id,
@@ -76,6 +86,7 @@ export function toLancamentoDto(l: repo.LancamentoComRefs): LancamentoDto {
     competencia: row.competencia ? row.competencia.slice(0, 7) : null,
     parcelaId: row.parcelaId,
     importacaoId: row.importacaoId,
+    itens,
     createdAt: isoTimestamp(row.createdAt) ?? row.createdAt,
     updatedAt: isoTimestamp(row.updatedAt) ?? row.updatedAt,
   };
@@ -94,7 +105,7 @@ async function validarContaBancaria(tdb: TenantDb, contaBancariaId: string): Pro
 async function obterDto(tdb: TenantDb, id: string): Promise<LancamentoDto> {
   const linha = await repo.buscarComRefs(tdb, id);
   if (!linha) throw new NotFoundError('Lançamento não encontrado');
-  return toLancamentoDto(linha);
+  return toLancamentoDto(linha, await itensDoLancamento(tdb, id));
 }
 
 export async function listar(
@@ -120,8 +131,13 @@ export async function listar(
     repo.contar(tdb, filtro),
     repo.totais(tdb, filtro),
   ]);
+  // Uma consulta só carrega os itens da página inteira (em vez de uma por linha).
+  const itens = await itensPorLancamento(
+    tdb,
+    linhas.map((l) => l.lancamento.id),
+  );
   return {
-    data: linhas.map(toLancamentoDto),
+    data: linhas.map((l) => toLancamentoDto(l, itens.get(l.lancamento.id) ?? [])),
     meta: { page, pageSize, total },
     totais: {
       receitas: somas.receitas,
@@ -138,6 +154,11 @@ export function obter(ctx: LancamentosCtx, id: string): Promise<LancamentoDto> {
 /**
  * POST /lancamentos. Com `recorrencia`, cria a recorrência (data de início = data do lançamento),
  * o primeiro lançamento com origem "recorrencia" e materializa as competências pendentes.
+ *
+ * Com `itens`, o lançamento e os itens são gravados na MESMA transação: se a soma dos itens não
+ * fechar com o valor, o 422 tem que desfazer também o lançamento (senão sobraria uma venda sem
+ * os itens que a explicam). As repetições futuras da recorrência nascem sem itens — a quantidade
+ * vendida muda a cada mês, então repetir a composição da primeira venda seria inventar dado.
  */
 export async function criar(
   ctx: LancamentosCtx,
@@ -156,13 +177,22 @@ export async function criar(
     dataPagamento: body.dataPagamento ?? null,
     observacoes: body.observacoes ?? null,
   };
+  const itens = body.itens ?? [];
 
   if (!body.recorrencia) {
-    const criado = await criarLancamentoInterno(ctx.exec, ctx.tenantId, {
-      ...base,
-      origem: 'manual',
+    if (itens.length === 0) {
+      const criado = await criarLancamentoInterno(ctx.exec, ctx.tenantId, {
+        ...base,
+        origem: 'manual',
+      });
+      return obterDto(tdbDe(ctx), criado.id);
+    }
+    const id = await ctx.withTx(async (tx) => {
+      const criado = await criarLancamentoInterno(tx, ctx.tenantId, { ...base, origem: 'manual' });
+      await sincronizarItens(tdbDe(ctx, tx), criado.id, base.valor, itens);
+      return criado.id;
     });
-    return obterDto(tdbDe(ctx), criado.id);
+    return obterDto(tdbDe(ctx), id);
   }
 
   const recorrencia = body.recorrencia;
@@ -190,6 +220,7 @@ export async function criar(
       recorrenciaId: rec.id,
       competencia,
     });
+    if (itens.length > 0) await sincronizarItens(tdb, primeiro.id, base.valor, itens);
     await gerarRecorrenciasPendentes(tx, ctx.tenantId, ctx.hoje(), { recorrenciaId: rec.id });
     return primeiro.id;
   });
@@ -236,7 +267,7 @@ export async function atualizar(
   if (status === 'pendente') dataPagamento = null;
   else if (!dataPagamento) dataPagamento = data;
 
-  await repo.atualizar(tdb, id, {
+  const valores = {
     tipo,
     data,
     categoriaId,
@@ -248,6 +279,32 @@ export async function atualizar(
     ...(body.descricao !== undefined ? { descricao: body.descricao } : {}),
     ...(body.formaPagamento !== undefined ? { formaPagamento: body.formaPagamento ?? 'pix' } : {}),
     ...(body.observacoes !== undefined ? { observacoes: body.observacoes } : {}),
+  };
+
+  // Itens: `body.itens` ausente mantém os que já estão lá; `[]` limpa. Mexer só no VALOR de um
+  // lançamento que tem itens também obriga a reconferir a soma — senão a venda passaria a valer
+  // um número que os próprios itens dela não explicam.
+  const itensAtuais = await itensDoLancamento(tdb, id);
+  const valorFinal = body.valor ?? atual.valor;
+  const precisaRegravarItens =
+    body.itens !== undefined || (itensAtuais.length > 0 && valorFinal !== atual.valor);
+
+  if (!precisaRegravarItens) {
+    await repo.atualizar(tdb, id, valores);
+    return obterDto(tdb, id);
+  }
+
+  const itensFinais =
+    body.itens ??
+    itensAtuais.map((i) => ({
+      produtoServicoId: i.produtoServicoId,
+      quantidade: i.quantidade,
+      valorUnitario: i.valorUnitario,
+    }));
+  await ctx.withTx(async (tx) => {
+    const tdbTx = tdbDe(ctx, tx);
+    await repo.atualizar(tdbTx, id, valores);
+    await sincronizarItens(tdbTx, id, valorFinal, itensFinais);
   });
   return obterDto(tdb, id);
 }

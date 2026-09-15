@@ -115,6 +115,9 @@ async function toLancamentoDto(tdb: TenantDb, l: LancamentoRow): Promise<Lancame
     competencia: l.competencia ? l.competencia.slice(0, 7) : null,
     parcelaId: l.parcelaId,
     importacaoId: l.importacaoId,
+    // Lançamentos gerados por este módulo nascem sem itens de catálogo (itens são escolhidos na
+    // tela de lançamentos); por isso a lista é sempre vazia aqui.
+    itens: [],
     createdAt: ts(l.createdAt),
     updatedAt: ts(l.updatedAt),
   };

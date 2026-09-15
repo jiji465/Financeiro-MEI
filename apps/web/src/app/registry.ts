@@ -14,6 +14,7 @@ import { dasModule } from '@/features/das';
 import { dashboardModule } from '@/features/dashboard';
 import { lancamentosModule } from '@/features/lancamentos';
 import { notasModule } from '@/features/notas';
+import { produtosServicosModule } from '@/features/produtos-servicos';
 import { referenciasModule } from '@/features/referencias';
 import { relatoriosModule } from '@/features/relatorios';
 
@@ -44,6 +45,7 @@ export const modules: readonly AppModule[] = [
   lancamentosModule,
   contasModule,
   contasBancariasModule,
+  produtosServicosModule,
   contatosModule,
   notasModule,
   dasModule,

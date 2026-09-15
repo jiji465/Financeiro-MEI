@@ -8,5 +8,7 @@ export const referenciasKeys = {
   contatos: (tipo?: string) => ['referencias', 'contatos', tipo ?? 'todos'] as const,
   contatosTodos: () => ['referencias', 'contatos'] as const,
   contasBancarias: () => ['referencias', 'contas-bancarias'] as const,
+  produtosServicos: (tipo?: string) =>
+    ['referencias', 'produtos-servicos', tipo ?? 'todos'] as const,
   dasParametros: (ano: number) => ['referencias', 'das-parametros', ano] as const,
 };

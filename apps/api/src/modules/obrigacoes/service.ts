@@ -308,6 +308,8 @@ function toLancamentoDto(row: LancamentoRow, categoria: CategoriaRow): Lancament
     competencia: row.competencia ? row.competencia.slice(0, 7) : null,
     parcelaId: row.parcelaId,
     importacaoId: row.importacaoId,
+    // Pagamento de DAS nunca é venda de catálogo: não tem itens.
+    itens: [],
     createdAt: isoTimestamp(row.createdAt) ?? row.createdAt,
     updatedAt: isoTimestamp(row.updatedAt) ?? row.updatedAt,
   };

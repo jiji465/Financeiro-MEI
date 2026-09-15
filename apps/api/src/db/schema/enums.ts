@@ -17,6 +17,7 @@ import {
   TIPOS_CONTATO,
   TIPOS_LANCAMENTO,
   TIPOS_NOTA,
+  TIPOS_PRODUTO_SERVICO,
   TIPOS_TITULO,
   USER_ROLES,
 } from '@meifin/shared';
@@ -30,6 +31,7 @@ export const statusLancamentoEnum = pgEnum('status_lancamento', STATUS_LANCAMENT
 export const origemLancamentoEnum = pgEnum('origem_lancamento', ORIGENS_LANCAMENTO);
 export const tipoContatoEnum = pgEnum('tipo_contato', TIPOS_CONTATO);
 export const tipoContaBancariaEnum = pgEnum('tipo_conta_bancaria', TIPOS_CONTA_BANCARIA);
+export const tipoProdutoServicoEnum = pgEnum('tipo_produto_servico', TIPOS_PRODUTO_SERVICO);
 export const grupoDasnEnum = pgEnum('grupo_dasn', GRUPOS_DASN);
 export const tipoTituloEnum = pgEnum('tipo_titulo', TIPOS_TITULO);
 export const statusTituloEnum = pgEnum('status_titulo', STATUS_TITULO);

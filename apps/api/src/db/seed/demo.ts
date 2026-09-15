@@ -17,6 +17,7 @@ import {
   gerarParcelas,
   hojeSP,
   type IsoDate,
+  totalDoItem,
 } from '@meifin/shared';
 import { eq } from 'drizzle-orm';
 
@@ -25,6 +26,7 @@ import { type CategoriaRow } from '../schema/categorias.js';
 import { contasBancarias } from '../schema/contas-bancarias.js';
 import { contatos } from '../schema/contatos.js';
 import { notasFiscais } from '../schema/notas-fiscais.js';
+import { lancamentoItens, produtosServicos } from '../schema/produtos-servicos.js';
 import { parcelas, titulos } from '../schema/titulos.js';
 import { hashSenha } from '../../lib/senha.js';
 import * as authRepo from '../../modules/auth/repository.js';
@@ -45,6 +47,8 @@ export interface DemoSeedResult {
     fornecedores: number;
     lancamentos: number;
     contasBancarias: number;
+    produtosServicos: number;
+    itensDeVenda: number;
     notasFiscais: number;
     titulos: number;
     parcelas: number;
@@ -83,6 +87,57 @@ const CONTAS_BANCARIAS = [
     instituicao: null,
     tipo: 'dinheiro' as const,
     saldoInicial: 30_000,
+  },
+] as const;
+
+/**
+ * Catálogo da demonstração: três produtos e três serviços. Os três primeiros movimentam vendas
+ * todo mês (ver a montagem dos itens abaixo); os outros ficam cadastrados sem movimento, que é o
+ * estado normal de boa parte de um catálogo real. "Pacote mensal de design" nasce sem preço
+ * padrão de propósito: é o caso de quem combina o valor a cada trabalho.
+ */
+const CATALOGO = [
+  {
+    tipo: 'produto' as const,
+    nome: 'Bolo de cenoura com cobertura',
+    descricao: 'Bolo caseiro de 1,2 kg, cobertura de chocolate.',
+    precoPadrao: 4_500,
+    unidade: 'un',
+  },
+  {
+    tipo: 'produto' as const,
+    nome: 'Camiseta personalizada',
+    descricao: 'Camiseta de algodão com estampa sob encomenda.',
+    precoPadrao: 3_990,
+    unidade: 'un',
+  },
+  {
+    tipo: 'produto' as const,
+    nome: 'Caneca personalizada',
+    descricao: null,
+    precoPadrao: 2_500,
+    unidade: 'un',
+  },
+  {
+    tipo: 'servico' as const,
+    nome: 'Pacote mensal de design',
+    descricao: 'Peças para redes sociais; o valor é combinado a cada mês.',
+    precoPadrao: null,
+    unidade: 'mês',
+  },
+  {
+    tipo: 'servico' as const,
+    nome: 'Hora de consultoria',
+    descricao: null,
+    precoPadrao: 9_000,
+    unidade: 'h',
+  },
+  {
+    tipo: 'servico' as const,
+    nome: 'Ajuste de roupa sob medida',
+    descricao: null,
+    precoPadrao: 3_500,
+    unidade: 'un',
   },
 ] as const;
 
@@ -203,18 +258,77 @@ export async function seedDemo(database: Database, hojeParam?: IsoDate): Promise
     const contaCorrente = contas[0]!;
     const contaCaixa = contas[1]!;
 
+    // ---------------------------------------------------- catálogo (produtos/serviços)
+    const catalogo = await tx
+      .insert(produtosServicos)
+      .values(CATALOGO.map((p) => ({ tenantId: tenant.id, ...p })))
+      .returning();
+    const itemDoCatalogo = (nomeItem: string) => {
+      const encontrado = catalogo.find((p) => p.nome === nomeItem);
+      if (!encontrado) throw new Error(`Item "${nomeItem}" não encontrado no catálogo demo`);
+      return encontrado;
+    };
+    const bolo = itemDoCatalogo('Bolo de cenoura com cobertura');
+    const camiseta = itemDoCatalogo('Camiseta personalizada');
+    const pacoteDesign = itemDoCatalogo('Pacote mensal de design');
+    let qtdItens = 0;
+
+    /**
+     * Grava os itens de uma venda. A soma dos totais TEM que bater com o valor do lançamento
+     * (a API recusa o contrário), então aqui é o valor que sai dos itens — nunca o contrário.
+     */
+    const gravarItens = async (
+      lancamentoId: string,
+      linhas: { produtoServicoId: string; quantidade: number; valorUnitario: number }[],
+    ) => {
+      await tx.insert(lancamentoItens).values(
+        linhas.map((l, ordem) => ({
+          tenantId: tenant.id,
+          lancamentoId,
+          ...l,
+          valorTotal: totalDoItem(l.quantidade, l.valorUnitario),
+          ordem,
+        })),
+      );
+      qtdItens += linhas.length;
+    };
+
     // ------------------------------------------------------------ lançamentos
     let qtdLancamentos = 0;
     for (let i = 0; i < meses.length; i++) {
       const competencia = meses[i]!;
       const totalMes = MESES_RECEITA[i]!;
       const ehMesAtual = competencia === mesAtual;
-      const valorVenda = Math.round(totalMes * 0.6);
+      // A venda do mês é composta de bolos + camisetas: em vez de fatiar o faturamento em 60/40
+      // e inventar itens que não fecham, as quantidades saem de ~60% do mês e o VALOR sai delas.
+      // O que sobra vai para a prestação de serviços, então o total do mês não muda.
+      const alvoVenda = Math.round(totalMes * 0.6);
+      const qtdBolos = Math.max(1, Math.floor((alvoVenda * 0.6) / bolo.precoPadrao!));
+      const qtdCamisetas = Math.max(
+        1,
+        Math.floor((alvoVenda - qtdBolos * bolo.precoPadrao!) / camiseta.precoPadrao!),
+      );
+      const itensDaVenda = [
+        {
+          produtoServicoId: bolo.id,
+          quantidade: qtdBolos * 1000,
+          valorUnitario: bolo.precoPadrao!,
+        },
+        {
+          produtoServicoId: camiseta.id,
+          quantidade: qtdCamisetas * 1000,
+          valorUnitario: camiseta.precoPadrao!,
+        },
+      ];
+      const valorVenda = itensDaVenda.reduce(
+        (soma, l) => soma + totalDoItem(l.quantidade, l.valorUnitario),
+        0,
+      );
       const valorServico = totalMes - valorVenda;
       const clienteVenda = clientes[i % clientes.length]!;
       const clienteServico = clientes[(i + 3) % clientes.length]!;
 
-      await criarLancamentoInterno(tx, tenant.id, {
+      const venda = await criarLancamentoInterno(tx, tenant.id, {
         tipo: 'receita',
         data: diaDoMes(competencia, 8),
         valor: valorVenda,
@@ -226,10 +340,11 @@ export async function seedDemo(database: Database, hojeParam?: IsoDate): Promise
         status: 'pago',
         origem: 'manual',
       });
+      await gravarItens(venda.id, itensDaVenda);
       qtdLancamentos++;
       // No mês corrente o segundo recebimento ainda não caiu: fica pendente (mostra em
       // "receitas pendentes" e no fluxo de caixa previsto).
-      await criarLancamentoInterno(tx, tenant.id, {
+      const servico = await criarLancamentoInterno(tx, tenant.id, {
         tipo: 'receita',
         data: diaDoMes(competencia, 22),
         valor: valorServico,
@@ -241,6 +356,10 @@ export async function seedDemo(database: Database, hojeParam?: IsoDate): Promise
         status: ehMesAtual ? 'pendente' : 'pago',
         origem: 'manual',
       });
+      // Um pacote de design fechado no mês: preço combinado (o item não tem preço padrão).
+      await gravarItens(servico.id, [
+        { produtoServicoId: pacoteDesign.id, quantidade: 1000, valorUnitario: valorServico },
+      ]);
       qtdLancamentos++;
 
       const despesas: {
@@ -499,6 +618,8 @@ export async function seedDemo(database: Database, hojeParam?: IsoDate): Promise
         fornecedores: fornecedores.length,
         lancamentos: qtdLancamentos,
         contasBancarias: contas.length,
+        produtosServicos: catalogo.length,
+        itensDeVenda: qtdItens,
         notasFiscais: qtdNotas,
         titulos: qtdTitulos,
         parcelas: qtdParcelas,

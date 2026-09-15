@@ -17,6 +17,7 @@ import { importacoesModule } from './importacoes/index.js';
 import { lancamentosModule } from './lancamentos/index.js';
 import { notasFiscaisModule } from './notas-fiscais/index.js';
 import { obrigacoesModule } from './obrigacoes/index.js';
+import { produtosServicosModule } from './produtos-servicos/index.js';
 import { relatoriosModule } from './relatorios/index.js';
 import { solicitacoesModule } from './solicitacoes/index.js';
 import { titulosModule } from './titulos/index.js';
@@ -44,6 +45,12 @@ export const modules: readonly ModuleDefinition[] = [
     name: 'contas-bancarias',
     prefix: '/contas-bancarias',
     plugin: contasBancariasModule,
+    requiresAuth: true,
+  },
+  {
+    name: 'produtos-servicos',
+    prefix: '/produtos-servicos',
+    plugin: produtosServicosModule,
     requiresAuth: true,
   },
   { name: 'lancamentos', prefix: '', plugin: lancamentosModule, requiresAuth: true },

@@ -5,6 +5,7 @@ import type { QueryClient } from '@tanstack/react-query';
 const CHAVES_AFETADAS = [
   ['contas'],
   ['contas-bancarias'],
+  ['produtos-servicos'],
   ['lancamentos'],
   ['dashboard'],
   ['relatorios'],

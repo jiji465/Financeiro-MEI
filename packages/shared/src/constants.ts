@@ -40,6 +40,29 @@ export type TipoContato = (typeof TIPOS_CONTATO)[number];
 export const TIPOS_CONTA_BANCARIA = ['corrente', 'poupanca', 'pagamento', 'dinheiro'] as const;
 export type TipoContaBancaria = (typeof TIPOS_CONTA_BANCARIA)[number];
 
+/** Catálogo do MEI: o que ele vende (produto) e o que ele presta (serviço). */
+export const TIPOS_PRODUTO_SERVICO = ['produto', 'servico'] as const;
+export type TipoProdutoServico = (typeof TIPOS_PRODUTO_SERVICO)[number];
+
+/**
+ * Unidades sugeridas no cadastro do catálogo. É só uma lista de atalho: a unidade é texto livre
+ * (o MEI pode ter "saco", "dúzia", "diária"), então nada aqui vira enum no banco.
+ */
+export const UNIDADES_SUGERIDAS = [
+  'un',
+  'cx',
+  'pct',
+  'kg',
+  'g',
+  'l',
+  'ml',
+  'm',
+  'm²',
+  'h',
+  'dia',
+  'mês',
+] as const;
+
 export const GRUPOS_DASN = ['comercio', 'servicos'] as const;
 export type GrupoDasn = (typeof GRUPOS_DASN)[number];
 

@@ -6,7 +6,10 @@ import {
   centavosParaReais,
   formatBRL,
   formatDecimalBR,
+  formatQuantidade,
   parseBRL,
+  parseQuantidade,
+  totalDoItem,
   percentual,
   percentualBp,
   percentualDe,
@@ -127,5 +130,63 @@ describe('utilitários', () => {
     expect(variacaoPercentual(800, 1000)).toBe(-20);
     expect(variacaoPercentual(-500, -1000)).toBe(50);
     expect(variacaoPercentual(100, 0)).toBeNull();
+  });
+});
+
+describe('totalDoItem (quantidade em milésimos × preço em centavos)', () => {
+  it('quantidade inteira é multiplicação simples', () => {
+    // 3 bolos a R$ 45,00
+    expect(totalDoItem(3000, 4500)).toBe(13_500);
+    expect(totalDoItem(1000, 1)).toBe(1);
+    expect(totalDoItem(1000, 0)).toBe(0);
+  });
+
+  it('quantidade fracionada arredonda half-up no centavo', () => {
+    // 1,5 kg a R$ 10,33 = 1.549,5 centavos → R$ 15,50 (meio para cima)
+    expect(totalDoItem(1500, 1033)).toBe(1550);
+    // 0,333 h a R$ 100,00 = 3.330 centavos exatos
+    expect(totalDoItem(333, 10_000)).toBe(3330);
+    // 1,5 × R$ 0,01 = 1,5 centavo → 2 centavos
+    expect(totalDoItem(1500, 1)).toBe(2);
+    // 1,4 × R$ 0,01 = 1,4 centavo → 1 centavo (abaixo do meio, desce)
+    expect(totalDoItem(1400, 1)).toBe(1);
+    // 2,5 × R$ 0,01 = 2,5 centavos → 3 (half-UP, não "half-even" que daria 2)
+    expect(totalDoItem(2500, 1)).toBe(3);
+  });
+
+  it('não usa ponto flutuante: 0,1 + 0,2 não contamina o total', () => {
+    // 0,001 un a R$ 0,01 = 0,01 centavo → 0 (trunca para baixo, não vira 1)
+    expect(totalDoItem(1, 1)).toBe(0);
+    // Três linhas de 0,1 un a R$ 3,33 somam exatamente o mesmo que a conta manual
+    const linha = totalDoItem(100, 333);
+    expect(linha).toBe(33);
+    expect(linha * 3).toBe(99);
+  });
+
+  it('recusa entradas que não são inteiros não negativos', () => {
+    expect(() => totalDoItem(1.5, 1000)).toThrow(TypeError);
+    expect(() => totalDoItem(-1000, 1000)).toThrow(TypeError);
+    expect(() => totalDoItem(1000, -1)).toThrow(TypeError);
+    expect(() => totalDoItem(1000, 10.5)).toThrow(TypeError);
+  });
+});
+
+describe('quantidade em milésimos', () => {
+  it('formatQuantidade mostra só as casas necessárias', () => {
+    expect(formatQuantidade(3000)).toBe('3');
+    expect(formatQuantidade(1500)).toBe('1,5');
+    expect(formatQuantidade(250)).toBe('0,25');
+    expect(formatQuantidade(1)).toBe('0,001');
+    expect(formatQuantidade(0)).toBe('0');
+  });
+
+  it('parseQuantidade aceita vírgula e ponto e trunca em três casas', () => {
+    expect(parseQuantidade('3')).toBe(3000);
+    expect(parseQuantidade('1,5')).toBe(1500);
+    expect(parseQuantidade('1.5')).toBe(1500);
+    expect(parseQuantidade('0,2505')).toBe(250);
+    expect(parseQuantidade('')).toBeNull();
+    expect(parseQuantidade('abc')).toBeNull();
+    expect(parseQuantidade('-2')).toBeNull();
   });
 });

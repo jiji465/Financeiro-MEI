@@ -17,6 +17,7 @@ import type {
   TipoContato,
   TipoLancamento,
   TipoNota,
+  TipoProdutoServico,
   TipoTitulo,
   UserRole,
 } from '@meifin/shared';
@@ -80,6 +81,17 @@ export const TIPO_CONTA_BANCARIA_LABELS: Record<TipoContaBancaria, string> = {
   poupanca: 'Poupança',
   pagamento: 'Conta de pagamento',
   dinheiro: 'Dinheiro em espécie',
+};
+
+export const TIPO_PRODUTO_SERVICO_LABELS: Record<TipoProdutoServico, string> = {
+  produto: 'Produto',
+  servico: 'Serviço',
+};
+
+/** Plural, para abas e títulos de lista. */
+export const TIPO_PRODUTO_SERVICO_PLURAL: Record<TipoProdutoServico, string> = {
+  produto: 'Produtos',
+  servico: 'Serviços',
 };
 
 export const GRUPO_DASN_LABELS: Record<GrupoDasn, string> = {

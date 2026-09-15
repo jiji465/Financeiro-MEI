@@ -84,6 +84,9 @@ function toLancamentoDto(linha: repo.LinhaHistorico, contato: ContatoRow): Lanca
     competencia: l.competencia ? l.competencia.slice(0, 7) : null,
     parcelaId: l.parcelaId,
     importacaoId: l.importacaoId,
+    // O histórico do contato mostra os lançamentos, não o detalhe da venda: os itens de catálogo
+    // não são carregados aqui (quem quiser vê-los abre o lançamento na tela de lançamentos).
+    itens: [],
     createdAt: isoTimestamp(l.createdAt) ?? l.createdAt,
     updatedAt: isoTimestamp(l.updatedAt) ?? l.updatedAt,
   };

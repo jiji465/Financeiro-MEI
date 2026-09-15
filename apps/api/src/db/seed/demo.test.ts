@@ -61,6 +61,9 @@ describe('seedDemo', () => {
     expect(c.titulos).toBe(3);
     expect(c.parcelas).toBe(9); // 3 + 2 + 4
     expect(c.dasPagos).toBe(11);
+    expect(c.produtosServicos).toBe(6);
+    // 12 meses × (2 itens na venda de produtos + 1 no pacote de serviço).
+    expect(c.itensDeVenda).toBe(36);
     // 12 meses × (2 receitas + 7~8 despesas) + 3 parcelas baixadas como lançamento.
     expect(c.lancamentos).toBeGreaterThan(100);
   });
