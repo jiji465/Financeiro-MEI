@@ -9,6 +9,7 @@ import { hojeSP } from '@/lib/format/date';
 import { useSearchParamsState } from '@/lib/hooks';
 
 import { AlertasList } from '../components/alertas-list';
+import { CnpjParaGuia } from '../components/cnpj-para-guia';
 import { SeletorAno } from '../components/das-status-badge';
 import { DasTabela, ResumoDas } from '../components/das-tabela';
 import { DasnPainel } from '../components/dasn-painel';
@@ -30,6 +31,7 @@ function DasMensal({ ano }: { ano: number }) {
               </p>
             ) : null}
             <ResumoDas das={das} />
+            <CnpjParaGuia />
             <DasTabela das={das} />
           </>
         )}

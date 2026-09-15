@@ -56,32 +56,44 @@ const TIPO_OPCOES = [
   { value: 'despesa' as const, label: 'Despesa', descricao: 'Dinheiro que sai' },
 ];
 
-const lancamentoFormSchema = z.object({
-  tipo: z.enum(TIPOS_LANCAMENTO),
-  descricao: z
-    .string()
-    .trim()
-    .min(1, 'Informe a descrição')
-    .max(160, 'Descrição deve ter no máximo 160 caracteres'),
-  valor: z
-    .number()
-    .nullable()
-    .refine((v): v is number => v !== null && v > 0, 'Informe o valor'),
-  data: isoDate,
-  categoriaId: uuid.or(z.literal('')).refine((v) => v !== '', 'Selecione a categoria'),
-  contatoId: z.string().nullable(),
-  formaPagamento: z.enum(FORMAS_PAGAMENTO).nullable(),
-  status: z.enum(STATUS_LANCAMENTO),
-  dataPagamento: isoDate.nullable(),
-  observacoes: textoNulavel,
-  repetir: z.boolean(),
-  diaDoMes: z.coerce
-    .number()
-    .int('Dia inválido')
-    .min(1, 'Dia deve ser entre 1 e 31')
-    .max(31, 'Dia deve ser entre 1 e 31'),
-  dataFimRecorrencia: isoDate.nullable(),
-});
+const lancamentoFormSchema = z
+  .object({
+    tipo: z.enum(TIPOS_LANCAMENTO),
+    descricao: z
+      .string()
+      .trim()
+      .min(1, 'Informe a descrição')
+      .max(160, 'Descrição deve ter no máximo 160 caracteres'),
+    valor: z
+      .number()
+      .nullable()
+      .refine((v): v is number => v !== null && v > 0, 'Informe o valor'),
+    data: isoDate,
+    categoriaId: uuid.or(z.literal('')).refine((v) => v !== '', 'Selecione a categoria'),
+    contatoId: z.string().nullable(),
+    formaPagamento: z.enum(FORMAS_PAGAMENTO).nullable(),
+    status: z.enum(STATUS_LANCAMENTO),
+    dataPagamento: isoDate.nullable(),
+    observacoes: textoNulavel,
+    repetir: z.boolean(),
+    diaDoMes: z.coerce
+      .number()
+      .int('Dia inválido')
+      .min(1, 'Dia deve ser entre 1 e 31')
+      .max(31, 'Dia deve ser entre 1 e 31'),
+    dataFimRecorrencia: isoDate.nullable(),
+  })
+  .superRefine((v, ctx) => {
+    // Repetição sem data final vira lançamento se acumulando pra sempre, e quem cadastrou não
+    // lembra mais de onde veio. Só é exigida quando a repetição está ligada.
+    if (v.repetir && !v.dataFimRecorrencia) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['dataFimRecorrencia'],
+        message: 'Informe até quando repetir',
+      });
+    }
+  });
 type LancamentoFormInput = z.input<typeof lancamentoFormSchema>;
 type LancamentoFormValores = z.output<typeof lancamentoFormSchema>;
 
@@ -336,7 +348,6 @@ function LancamentoForm({ lancamento, tipoInicial, onClose }: LancamentoFormProp
                 control={form.control}
                 name="dataFimRecorrencia"
                 label="Repetir até"
-                opcional
                 min={data}
               />
             </div>
