@@ -1,8 +1,10 @@
 // Restauração da sessão em recarga de página: POST /auth/refresh (cookie) → GET /auth/me.
 // Single-flight: RequireAuth e RedirectIfAuth podem chamar ao mesmo tempo.
+import { queryClient } from '@/app/query-client';
 import { refreshAccessToken } from '@/lib/api/client';
 
 import { authApi } from './api';
+import { authKeys } from './keys';
 import { useAuthStore } from './store';
 
 let restauracao: Promise<boolean> | null = null;
@@ -22,7 +24,14 @@ export function restaurarSessao(): Promise<boolean> {
           useAuthStore.getState().clear();
           return false;
         }
-        const { data } = await authApi.me();
+        // Busca pelo cache do React Query, não direto pela api: `refreshAccessToken` já gravou o
+        // token, então o RequireAuth renderiza o app e o `useMe()` monta enquanto esta chamada
+        // ainda está no ar. Usando a mesma chave, os dois compartilham a requisição em voo em vez
+        // de pedir /auth/me duas vezes — uma ida e volta inteira a menos em toda recarga.
+        const data = await queryClient.fetchQuery({
+          queryKey: authKeys.me(),
+          queryFn: async () => (await authApi.me()).data,
+        });
         useAuthStore
           .getState()
           .setSession({ accessToken: token, user: data.user, tenant: data.tenant });
