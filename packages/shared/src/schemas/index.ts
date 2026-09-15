@@ -5,6 +5,7 @@ export * from './common.js';
 export * from './auth.js';
 export * from './categorias.js';
 export * from './contatos.js';
+export * from './contas-bancarias.js';
 export * from './lancamentos.js';
 export * from './titulos.js';
 export * from './notas.js';

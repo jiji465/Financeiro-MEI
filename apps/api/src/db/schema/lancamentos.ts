@@ -15,6 +15,7 @@ import {
 
 import { dataNegocio, id, softDelete, tenantId, timestamps } from './_common.js';
 import { categorias } from './categorias.js';
+import { contasBancarias } from './contas-bancarias.js';
 import { contatos } from './contatos.js';
 import {
   formaPagamentoEnum,
@@ -76,6 +77,8 @@ export const lancamentos = pgTable(
     descricao: text('descricao').notNull(),
     categoriaId: uuid('categoria_id').notNull(),
     contatoId: uuid('contato_id'),
+    /** Conta bancária onde o dinheiro caiu/saiu; nulo em lançamentos anteriores ao cadastro. */
+    contaBancariaId: uuid('conta_bancaria_id'),
     formaPagamento: formaPagamentoEnum('forma_pagamento').notNull().default('pix'),
     status: statusLancamentoEnum('status').notNull().default('pago'),
     dataPagamento: dataNegocio('data_pagamento'),
@@ -109,6 +112,11 @@ export const lancamentos = pgTable(
       foreignColumns: [contatos.tenantId, contatos.id],
     }).onDelete('set null'),
     foreignKey({
+      name: 'lancamentos_conta_bancaria_fk',
+      columns: [t.tenantId, t.contaBancariaId],
+      foreignColumns: [contasBancarias.tenantId, contasBancarias.id],
+    }),
+    foreignKey({
       name: 'lancamentos_recorrencia_fk',
       columns: [t.tenantId, t.recorrenciaId],
       foreignColumns: [recorrencias.tenantId, recorrencias.id],
@@ -132,6 +140,7 @@ export const lancamentos = pgTable(
     index('lancamentos_tenant_tipo_status_data_idx').on(t.tenantId, t.tipo, t.status, t.data),
     index('lancamentos_tenant_categoria_idx').on(t.tenantId, t.categoriaId),
     index('lancamentos_tenant_contato_idx').on(t.tenantId, t.contatoId),
+    index('lancamentos_tenant_conta_bancaria_idx').on(t.tenantId, t.contaBancariaId),
   ],
 );
 
@@ -158,6 +167,10 @@ export const lancamentosRelations = relations(lancamentos, ({ one }) => ({
   contato: one(contatos, {
     fields: [lancamentos.tenantId, lancamentos.contatoId],
     references: [contatos.tenantId, contatos.id],
+  }),
+  contaBancaria: one(contasBancarias, {
+    fields: [lancamentos.tenantId, lancamentos.contaBancariaId],
+    references: [contasBancarias.tenantId, contasBancarias.id],
   }),
   recorrencia: one(recorrencias, {
     fields: [lancamentos.tenantId, lancamentos.recorrenciaId],

@@ -1,5 +1,6 @@
-// /lancamentos — lista com filtros na URL (período, tipo, status, categoria, contato, origem,
-// busca, página) + drawer de criação (?novo=receita|despesa) e edição (?editar=<id>).
+// /lancamentos — lista com filtros na URL (período, tipo, status, categoria, contato, conta
+// bancária, origem, busca, página) + drawer de criação (?novo=receita|despesa) e edição
+// (?editar=<id>).
 import {
   ORIGENS_LANCAMENTO,
   STATUS_LANCAMENTO,
@@ -41,7 +42,12 @@ import { PeriodoSelect, type PeriodoValue } from '@/components/ui/periodo-select
 import { SimpleSelect } from '@/components/ui/select';
 import { StatCard } from '@/components/ui/stat-card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { categoriasParaOpcoes, useCategorias, useContatosOpcoes } from '@/features/referencias';
+import {
+  categoriasParaOpcoes,
+  useCategorias,
+  useContasBancariasOpcoes,
+  useContatosOpcoes,
+} from '@/features/referencias';
 import { formatData, hojeSP, periodoPreset, presetDoPeriodo } from '@/lib/format/date';
 import { formatBRL, formatBRLComSinal } from '@/lib/format/money';
 import { useDebounce } from '@/lib/hooks/use-debounce';
@@ -68,6 +74,7 @@ const CHAVES = [
   'status',
   'categoriaId',
   'contatoId',
+  'contaBancariaId',
   'origem',
   'q',
   'page',
@@ -103,6 +110,7 @@ export function LancamentosListaPage() {
   const tipoFiltro = (params.tipo || undefined) as TipoLancamento | undefined;
   const categorias = useCategorias(tipoFiltro);
   const contatos = useContatosOpcoes();
+  const contasBancarias = useContasBancariasOpcoes();
   const resumo = useResumoLancamentos({ de: periodo.de, ate: periodo.ate });
 
   const query = useLancamentos({
@@ -112,6 +120,7 @@ export function LancamentosListaPage() {
     status: (params.status || undefined) as StatusLancamento | undefined,
     categoriaId: params.categoriaId || undefined,
     contatoId: params.contatoId || undefined,
+    contaBancariaId: params.contaBancariaId || undefined,
     origem: (params.origem || undefined) as OrigemLancamento | undefined,
     busca: params.q || undefined,
     page,
@@ -156,6 +165,12 @@ export function LancamentosListaPage() {
       header: 'Contato',
       hideBelow: 'lg',
       cell: (l) => <span className="text-zinc-600">{l.contato?.nome ?? '—'}</span>,
+    },
+    {
+      id: 'contaBancaria',
+      header: 'Conta',
+      hideBelow: 'xl',
+      cell: (l) => <span className="text-zinc-600">{l.contaBancaria?.nome ?? '—'}</span>,
     },
     {
       id: 'valor',
@@ -337,6 +352,17 @@ export function LancamentosListaPage() {
               options={contatos.opcoes}
               loading={contatos.isPending}
               placeholder="Contato (todos)"
+              clearable
+            />
+          </div>
+          <div className="w-full md:w-52">
+            <Combobox
+              aria-label="Conta bancária"
+              value={params.contaBancariaId || null}
+              onChange={(v) => patch({ contaBancariaId: v ?? '', page: '' })}
+              options={contasBancarias.opcoes}
+              loading={contasBancarias.isPending}
+              placeholder="Conta (todas)"
               clearable
             />
           </div>

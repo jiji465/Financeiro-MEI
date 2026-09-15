@@ -3,6 +3,7 @@
 import { and, asc, desc, eq, gte, ilike, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
 
 import { categorias } from '../../db/schema/categorias.js';
+import { contasBancarias } from '../../db/schema/contas-bancarias.js';
 import { contatos, type ContatoRow } from '../../db/schema/contatos.js';
 import { lancamentos, type LancamentoRow } from '../../db/schema/lancamentos.js';
 import { notasFiscais } from '../../db/schema/notas-fiscais.js';
@@ -137,6 +138,7 @@ export interface FiltroHistorico {
 export interface LinhaHistorico {
   lancamento: LancamentoRow;
   categoria: { id: string; nome: string; cor: string | null; icone: string | null } | null;
+  contaBancaria: { id: string; nome: string; tipo: string } | null;
 }
 
 export interface TotaisHistorico {
@@ -168,6 +170,11 @@ export async function listarLancamentos(
           cor: categorias.cor,
           icone: categorias.icone,
         },
+        contaBancaria: {
+          id: contasBancarias.id,
+          nome: contasBancarias.nome,
+          tipo: contasBancarias.tipo,
+        },
       })
       .from(lancamentos)
       .leftJoin(
@@ -175,6 +182,13 @@ export async function listarLancamentos(
         and(
           eq(categorias.tenantId, lancamentos.tenantId),
           eq(categorias.id, lancamentos.categoriaId),
+        ),
+      )
+      .leftJoin(
+        contasBancarias,
+        and(
+          eq(contasBancarias.tenantId, lancamentos.tenantId),
+          eq(contasBancarias.id, lancamentos.contaBancariaId),
         ),
       )
       .where(where)
@@ -195,7 +209,11 @@ export async function listarLancamentos(
       .where(where),
   ]);
   return {
-    linhas: linhas.map((l) => ({ lancamento: l.lancamento, categoria: l.categoria ?? null })),
+    linhas: linhas.map((l) => ({
+      lancamento: l.lancamento,
+      categoria: l.categoria ?? null,
+      contaBancaria: l.contaBancaria?.id ? l.contaBancaria : null,
+    })),
     total: agregado?.total ?? 0,
     totais: { receitas: agregado?.receitas ?? 0, despesas: agregado?.despesas ?? 0 },
   };

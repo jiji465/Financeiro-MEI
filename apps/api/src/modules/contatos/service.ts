@@ -69,6 +69,8 @@ function toLancamentoDto(linha: repo.LinhaHistorico, contato: ContatoRow): Lanca
     categoria: linha.categoria,
     contatoId: l.contatoId,
     contato: { id: contato.id, nome: contato.nome, tipo: contato.tipo },
+    contaBancariaId: l.contaBancariaId,
+    contaBancaria: linha.contaBancaria,
     formaPagamento: l.formaPagamento,
     status: l.status,
     dataPagamento: l.dataPagamento,

@@ -48,7 +48,8 @@ if (executadoComoScript()) {
           [
             `Seed demo criado: ${DEMO_EMAIL} / ${DEMO_SENHA}`,
             `  clientes: ${c.clientes}, fornecedores: ${c.fornecedores}`,
-            `  lançamentos: ${c.lancamentos}, notas fiscais: ${c.notasFiscais}`,
+            `  lançamentos: ${c.lancamentos}, contas bancárias: ${c.contasBancarias}`,
+            `  notas fiscais: ${c.notasFiscais}`,
             `  títulos: ${c.titulos} (${c.parcelas} parcelas), DAS pagos: ${c.dasPagos}`,
           ].join('\n'),
         );

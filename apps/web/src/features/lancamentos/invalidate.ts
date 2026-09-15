@@ -7,6 +7,7 @@ const CHAVES_AFETADAS = [
   ['lancamentos'],
   ['recorrencias'],
   ['contas'],
+  ['contas-bancarias'],
   ['dashboard'],
   ['relatorios'],
   ['obrigacoes'],

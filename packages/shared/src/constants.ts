@@ -36,6 +36,10 @@ export type OrigemLancamento = (typeof ORIGENS_LANCAMENTO)[number];
 export const TIPOS_CONTATO = ['cliente', 'fornecedor', 'ambos'] as const;
 export type TipoContato = (typeof TIPOS_CONTATO)[number];
 
+/** Tipos de conta bancária cadastrada manualmente ("dinheiro" = caixa em espécie). */
+export const TIPOS_CONTA_BANCARIA = ['corrente', 'poupanca', 'pagamento', 'dinheiro'] as const;
+export type TipoContaBancaria = (typeof TIPOS_CONTA_BANCARIA)[number];
+
 export const GRUPOS_DASN = ['comercio', 'servicos'] as const;
 export type GrupoDasn = (typeof GRUPOS_DASN)[number];
 

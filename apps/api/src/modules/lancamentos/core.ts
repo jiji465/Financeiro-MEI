@@ -1,10 +1,15 @@
 // CONGELADO após o P1-B. Ponto único de criação/exclusão de lançamentos usado por outros
 // módulos (títulos → baixa, obrigações → DAS, notas fiscais → receita, importações, recorrências).
 // WP2 (lançamentos) implementa rotas/serviço no resto da pasta e deve chamar estas funções.
+//
+// Única mudança pós-congelamento: `contaBancariaId` opcional (contas bancárias). É aditiva — sem
+// ele o comportamento é exatamente o de antes — e precisa estar aqui porque este é o único ponto
+// de INSERT de lançamento: sem isso, nenhum outro módulo conseguiria gravar a conta na criação.
 import { isIsoDate, type IsoDate } from '@meifin/shared';
 
 import type { DbExecutor } from '../../db/index.js';
 import { categorias } from '../../db/schema/categorias.js';
+import { contasBancarias } from '../../db/schema/contas-bancarias.js';
 import { contatos } from '../../db/schema/contatos.js';
 import { lancamentos, type LancamentoRow } from '../../db/schema/lancamentos.js';
 import { NotFoundError, UnprocessableError, ValidationError } from '../../lib/errors.js';
@@ -18,6 +23,8 @@ export interface CriarLancamentoInternoInput {
   descricao: string;
   categoriaId: string;
   contatoId?: string | null;
+  /** Conta bancária onde o dinheiro caiu/saiu (opcional: lançamentos antigos não têm). */
+  contaBancariaId?: string | null;
   formaPagamento: LancamentoRow['formaPagamento'];
   status: LancamentoRow['status'];
   /** Padrão: = data quando status = pago. */
@@ -35,7 +42,7 @@ export interface CriarLancamentoInternoInput {
 /**
  * Cria um lançamento validando as regras de integridade multi-tenant:
  * - categoria existe no tenant (senão 404) e é do mesmo tipo (senão 422);
- * - contato, se informado, existe no tenant e não está excluído (senão 404);
+ * - contato e conta bancária, se informados, existem no tenant e não estão excluídos (senão 404);
  * - valor inteiro positivo em centavos, datas AAAA-MM-DD válidas;
  * - recorrência/importação são garantidas pela FK composta (erro → 422 pelo error handler).
  */
@@ -76,6 +83,11 @@ export async function criarLancamentoInterno(
     if (!contato) throw new NotFoundError('Contato não encontrado');
   }
 
+  if (input.contaBancariaId) {
+    const conta = await tdb.findByIdOrNull(contasBancarias, input.contaBancariaId);
+    if (!conta) throw new NotFoundError('Conta bancária não encontrada');
+  }
+
   const dataPagamento =
     input.status === 'pago' ? (input.dataPagamento ?? input.data) : (input.dataPagamento ?? null);
 
@@ -86,6 +98,7 @@ export async function criarLancamentoInterno(
     descricao,
     categoriaId: categoria.id,
     contatoId: input.contatoId ?? null,
+    contaBancariaId: input.contaBancariaId ?? null,
     formaPagamento: input.formaPagamento,
     status: input.status,
     dataPagamento,

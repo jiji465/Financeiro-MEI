@@ -9,7 +9,9 @@ import type { ComboboxOption } from '@/components/ui/combobox';
 import { useMe } from '@/features/auth/hooks';
 import { formatDocumento } from '@/lib/format/documento';
 
-import { referenciasApi, type CategoriaRef, type ContatoRef } from './api';
+import { TIPO_CONTA_BANCARIA_LABELS } from '@/lib/labels';
+
+import { referenciasApi, type CategoriaRef, type ContaBancariaRef, type ContatoRef } from './api';
 import { referenciasKeys } from './keys';
 
 const CINCO_MINUTOS = 5 * 60_000;
@@ -47,6 +49,29 @@ export function contatosParaOpcoes(contatos: readonly ContatoRef[] | undefined):
     label: c.nome,
     descricao: c.documento ? formatDocumento(c.documento) : undefined,
     keywords: c.documento ? [c.documento] : undefined,
+  }));
+}
+
+/** Contas bancárias ativas para o seletor do lançamento (mesmo formato dos outros comboboxes). */
+export function useContasBancariasOpcoes() {
+  const query = useQuery({
+    queryKey: referenciasKeys.contasBancarias(),
+    queryFn: () => referenciasApi.contasBancarias(),
+    staleTime: CINCO_MINUTOS,
+    select: (res) => res.data,
+  });
+  const opcoes = useMemo(() => contasBancariasParaOpcoes(query.data), [query.data]);
+  return { ...query, opcoes };
+}
+
+export function contasBancariasParaOpcoes(
+  contas: readonly ContaBancariaRef[] | undefined,
+): ComboboxOption[] {
+  return (contas ?? []).map((c) => ({
+    value: c.id,
+    label: c.nome,
+    descricao: c.instituicao ?? TIPO_CONTA_BANCARIA_LABELS[c.tipo],
+    keywords: c.instituicao ? [c.instituicao] : undefined,
   }));
 }
 

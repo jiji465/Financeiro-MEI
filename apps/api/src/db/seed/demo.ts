@@ -22,6 +22,7 @@ import { eq } from 'drizzle-orm';
 
 import type { Database } from '../index.js';
 import { type CategoriaRow } from '../schema/categorias.js';
+import { contasBancarias } from '../schema/contas-bancarias.js';
 import { contatos } from '../schema/contatos.js';
 import { notasFiscais } from '../schema/notas-fiscais.js';
 import { parcelas, titulos } from '../schema/titulos.js';
@@ -43,6 +44,7 @@ export interface DemoSeedResult {
     clientes: number;
     fornecedores: number;
     lancamentos: number;
+    contasBancarias: number;
     notasFiscais: number;
     titulos: number;
     parcelas: number;
@@ -63,6 +65,25 @@ const CLIENTES = [
   { nome: 'Roberto Alves', cidade: 'Osasco', uf: 'SP' },
   { nome: 'Studio Criativo Design', cidade: 'Curitiba', uf: 'PR' },
   { nome: 'Juliana Martins', cidade: 'São Paulo', uf: 'SP' },
+] as const;
+
+/**
+ * Contas bancárias da demonstração: a conta do dia a dia e o caixa em espécie da loja. Os
+ * lançamentos abaixo são distribuídos entre as duas para a tela de contas nascer com saldo.
+ */
+const CONTAS_BANCARIAS = [
+  {
+    nome: 'Nubank PJ',
+    instituicao: 'Nu Pagamentos S.A.',
+    tipo: 'corrente' as const,
+    saldoInicial: 350_000,
+  },
+  {
+    nome: 'Caixa da loja',
+    instituicao: null,
+    tipo: 'dinheiro' as const,
+    saldoInicial: 30_000,
+  },
 ] as const;
 
 const FORNECEDORES = [
@@ -174,6 +195,14 @@ export async function seedDemo(database: Database, hojeParam?: IsoDate): Promise
       )
       .returning();
 
+    // ------------------------------------------------------ contas bancárias
+    const contas = await tx
+      .insert(contasBancarias)
+      .values(CONTAS_BANCARIAS.map((c) => ({ tenantId: tenant.id, ...c })))
+      .returning();
+    const contaCorrente = contas[0]!;
+    const contaCaixa = contas[1]!;
+
     // ------------------------------------------------------------ lançamentos
     let qtdLancamentos = 0;
     for (let i = 0; i < meses.length; i++) {
@@ -192,6 +221,7 @@ export async function seedDemo(database: Database, hojeParam?: IsoDate): Promise
         descricao: 'Venda de produtos do mês',
         categoriaId: nome('Venda de produtos').id,
         contatoId: clienteVenda.id,
+        contaBancariaId: contaCorrente.id,
         formaPagamento: 'cartao',
         status: 'pago',
         origem: 'manual',
@@ -206,6 +236,7 @@ export async function seedDemo(database: Database, hojeParam?: IsoDate): Promise
         descricao: 'Prestação de serviços do mês',
         categoriaId: nome('Prestação de serviços').id,
         contatoId: clienteServico.id,
+        contaBancariaId: contaCorrente.id,
         formaPagamento: 'pix',
         status: ehMesAtual ? 'pendente' : 'pago',
         origem: 'manual',
@@ -218,6 +249,8 @@ export async function seedDemo(database: Database, hojeParam?: IsoDate): Promise
         dia: number;
         descricao: string;
         contatoId?: string | null;
+        /** Omitido = conta corrente. */
+        contaBancariaId?: string;
       }[] = [
         { categoria: 'Aluguel', valor: 120_000, dia: 5, descricao: 'Aluguel do ponto comercial' },
         {
@@ -244,6 +277,7 @@ export async function seedDemo(database: Database, hojeParam?: IsoDate): Promise
           valor: 7_000 + (i % 3) * 500,
           dia: 15,
           descricao: 'Combustível e deslocamentos',
+          contaBancariaId: contaCaixa.id,
         },
         {
           categoria: 'Taxas bancárias',
@@ -277,6 +311,7 @@ export async function seedDemo(database: Database, hojeParam?: IsoDate): Promise
           descricao: d.descricao,
           categoriaId: nome(d.categoria).id,
           contatoId: d.contatoId ?? null,
+          contaBancariaId: d.contaBancariaId ?? contaCorrente.id,
           formaPagamento: 'boleto',
           status: pendente ? 'pendente' : 'pago',
           origem: 'manual',
@@ -463,6 +498,7 @@ export async function seedDemo(database: Database, hojeParam?: IsoDate): Promise
         clientes: clientes.length,
         fornecedores: fornecedores.length,
         lancamentos: qtdLancamentos,
+        contasBancarias: contas.length,
         notasFiscais: qtdNotas,
         titulos: qtdTitulos,
         parcelas: qtdParcelas,

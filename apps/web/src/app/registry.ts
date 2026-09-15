@@ -8,6 +8,7 @@ import { adminModule } from '@/features/admin';
 import { authModule } from '@/features/auth';
 import { configuracoesModule } from '@/features/configuracoes';
 import { contasModule } from '@/features/contas';
+import { contasBancariasModule } from '@/features/contas-bancarias';
 import { contatosModule } from '@/features/contatos';
 import { dasModule } from '@/features/das';
 import { dashboardModule } from '@/features/dashboard';
@@ -42,6 +43,7 @@ export const modules: readonly AppModule[] = [
   dashboardModule,
   lancamentosModule,
   contasModule,
+  contasBancariasModule,
   contatosModule,
   notasModule,
   dasModule,

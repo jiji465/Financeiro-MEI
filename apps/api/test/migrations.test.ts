@@ -17,6 +17,7 @@ const TABELAS_ESPERADAS = [
   'alertas_dispensados',
   'categorias',
   'configuracoes',
+  'contas_bancarias',
   'contatos',
   'das_pagamentos',
   'dasn_declaracoes',
@@ -47,6 +48,7 @@ const ENUMS_ESPERADOS = [
   'status_parcela',
   'status_solicitacao',
   'status_titulo',
+  'tipo_conta_bancaria',
   'tipo_contato',
   'tipo_lancamento',
   'tipo_nota',
@@ -112,6 +114,7 @@ describe('migrações (0000_init)', () => {
     );
     const nomes = fks.map((r) => r.conname);
     expect(nomes).toContain('lancamentos_categoria_fk');
+    expect(nomes).toContain('lancamentos_conta_bancaria_fk');
     expect(nomes).toContain('configuracoes_categoria_das_fk');
     expect(nomes).toContain('parcelas_titulo_fk');
 

@@ -283,3 +283,11 @@ export const contatoRef = z.object({
   tipo: z.string(),
 });
 export type ContatoRef = z.infer<typeof contatoRef>;
+
+/** Conta bancária resumida embutida no lançamento (o DTO completo vive em contas-bancarias). */
+export const contaBancariaRef = z.object({
+  id: uuid,
+  nome: z.string(),
+  tipo: z.string(),
+});
+export type ContaBancariaRef = z.infer<typeof contaBancariaRef>;

@@ -291,6 +291,10 @@ function toLancamentoDto(row: LancamentoRow, categoria: CategoriaRow): Lancament
     },
     contatoId: row.contatoId,
     contato: null,
+    contaBancariaId: row.contaBancariaId,
+    // Lançamentos gerados por este módulo nascem sem conta bancária (o vínculo é escolhido na
+    // tela de lançamentos); por isso a referência resumida é sempre nula aqui.
+    contaBancaria: null,
     formaPagamento: row.formaPagamento,
     status: row.status,
     dataPagamento: row.dataPagamento,

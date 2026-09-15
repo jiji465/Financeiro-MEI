@@ -1,7 +1,7 @@
 // Leituras compartilhadas por várias features. Os tipos abaixo são o mínimo que o web usa;
 // quando os schemas de categorias/contatos/obrigacoes do @meifin/shared estiverem publicados,
 // troque por `z.infer` deles (ver docs/handoff/P1-C.md).
-import type { GrupoDasn, TipoContato, TipoLancamento } from '@meifin/shared';
+import type { GrupoDasn, TipoContaBancaria, TipoContato, TipoLancamento } from '@meifin/shared';
 
 import { api } from '@/lib/api/client';
 
@@ -24,6 +24,13 @@ export interface ContatoRef {
   tipo: TipoContato;
   documento: string | null;
   ativo: boolean;
+}
+
+export interface ContaBancariaRef {
+  id: string;
+  nome: string;
+  instituicao: string | null;
+  tipo: TipoContaBancaria;
 }
 
 export interface DasParametros {
@@ -54,6 +61,7 @@ export const referenciasApi = {
     api.get<{ data: CategoriaRef[] }>('/categorias', { query: { tipo } }),
   contatos: (tipo?: TipoContato) =>
     api.get<Lista<ContatoRef>>('/contatos', { query: { tipo, pageSize: 200 } }),
+  contasBancarias: () => api.get<{ data: ContaBancariaRef[] }>('/contas-bancarias/opcoes'),
   dasParametros: (ano: number) =>
     api.get<{ data: DasParametros }>('/obrigacoes/parametros', { query: { ano } }),
 };

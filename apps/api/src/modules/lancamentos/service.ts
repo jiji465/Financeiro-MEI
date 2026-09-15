@@ -57,6 +57,8 @@ export function toLancamentoDto(l: repo.LancamentoComRefs): LancamentoDto {
     categoria: l.categoria,
     contatoId: row.contatoId,
     contato: l.contato,
+    contaBancariaId: row.contaBancariaId,
+    contaBancaria: l.contaBancaria,
     formaPagamento: row.formaPagamento,
     status: row.status,
     dataPagamento: row.dataPagamento,
@@ -83,6 +85,12 @@ function tdbDe(ctx: LancamentosCtx, exec: DbExecutor = ctx.exec): TenantDb {
   return forTenant(exec, ctx.tenantId);
 }
 
+/** Conta bancária existe no tenant e não está excluída (senão 404, nunca 403). */
+async function validarContaBancaria(tdb: TenantDb, contaBancariaId: string): Promise<void> {
+  const conta = await repo.buscarContaBancaria(tdb, contaBancariaId);
+  if (!conta) throw new NotFoundError('Conta bancária não encontrada');
+}
+
 async function obterDto(tdb: TenantDb, id: string): Promise<LancamentoDto> {
   const linha = await repo.buscarComRefs(tdb, id);
   if (!linha) throw new NotFoundError('Lançamento não encontrado');
@@ -102,6 +110,7 @@ export async function listar(
     status: query.status,
     categoriaId: query.categoriaId,
     contatoId: query.contatoId,
+    contaBancariaId: query.contaBancariaId,
     formaPagamento: query.formaPagamento,
     origem: query.origem,
     busca: query.busca,
@@ -141,6 +150,7 @@ export async function criar(
     descricao: body.descricao,
     categoriaId: body.categoriaId,
     contatoId: body.contatoId ?? null,
+    contaBancariaId: body.contaBancariaId ?? null,
     formaPagamento: body.formaPagamento ?? ('pix' as const),
     status: body.status,
     dataPagamento: body.dataPagamento ?? null,
@@ -159,6 +169,7 @@ export async function criar(
   const id = await ctx.withTx(async (tx) => {
     const tdb = tdbDe(ctx, tx);
     await validarReferencias(tdb, body.tipo, body.categoriaId, body.contatoId);
+    if (body.contaBancariaId) await validarContaBancaria(tdb, body.contaBancariaId);
     const competencia = inicioMes(body.data);
     const rec = await recRepo.criar(tdb, {
       tipo: body.tipo,
@@ -212,9 +223,12 @@ export async function atualizar(
   const tipo = body.tipo ?? atual.tipo;
   const categoriaId = body.categoriaId ?? atual.categoriaId;
   const contatoId = body.contatoId !== undefined ? body.contatoId : atual.contatoId;
+  const contaBancariaId =
+    body.contaBancariaId !== undefined ? body.contaBancariaId : atual.contaBancariaId;
   if (body.tipo !== undefined || body.categoriaId !== undefined || body.contatoId) {
     await validarReferencias(tdb, tipo, categoriaId, body.contatoId ?? null);
   }
+  if (body.contaBancariaId) await validarContaBancaria(tdb, body.contaBancariaId);
 
   const data = body.data ?? atual.data;
   const status = body.status ?? atual.status;
@@ -227,6 +241,7 @@ export async function atualizar(
     data,
     categoriaId,
     contatoId,
+    contaBancariaId,
     status,
     dataPagamento,
     ...(body.valor !== undefined ? { valor: body.valor } : {}),

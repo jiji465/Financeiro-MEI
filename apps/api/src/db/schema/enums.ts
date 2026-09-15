@@ -13,6 +13,7 @@ import {
   STATUS_PARCELA,
   STATUS_SOLICITACAO,
   STATUS_TITULO,
+  TIPOS_CONTA_BANCARIA,
   TIPOS_CONTATO,
   TIPOS_LANCAMENTO,
   TIPOS_NOTA,
@@ -28,6 +29,7 @@ export const formaPagamentoEnum = pgEnum('forma_pagamento', FORMAS_PAGAMENTO);
 export const statusLancamentoEnum = pgEnum('status_lancamento', STATUS_LANCAMENTO);
 export const origemLancamentoEnum = pgEnum('origem_lancamento', ORIGENS_LANCAMENTO);
 export const tipoContatoEnum = pgEnum('tipo_contato', TIPOS_CONTATO);
+export const tipoContaBancariaEnum = pgEnum('tipo_conta_bancaria', TIPOS_CONTA_BANCARIA);
 export const grupoDasnEnum = pgEnum('grupo_dasn', GRUPOS_DASN);
 export const tipoTituloEnum = pgEnum('tipo_titulo', TIPOS_TITULO);
 export const statusTituloEnum = pgEnum('status_titulo', STATUS_TITULO);

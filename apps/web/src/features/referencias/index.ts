@@ -6,11 +6,13 @@ export const referenciasModule: AppModule = { id: 'referencias', routes: [], nav
 
 export {
   categoriasParaOpcoes,
+  contasBancariasParaOpcoes,
   contatosParaOpcoes,
   useCategorias,
+  useContasBancariasOpcoes,
   useContatosOpcoes,
   useDasParametros,
   useMei,
 } from './hooks';
 export { referenciasKeys } from './keys';
-export type { CategoriaRef, ContatoRef, DasParametros } from './api';
+export type { CategoriaRef, ContaBancariaRef, ContatoRef, DasParametros } from './api';

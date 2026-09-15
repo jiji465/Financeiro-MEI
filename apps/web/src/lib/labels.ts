@@ -13,6 +13,7 @@ import type {
   StatusNota,
   StatusParcela,
   StatusTitulo,
+  TipoContaBancaria,
   TipoContato,
   TipoLancamento,
   TipoNota,
@@ -72,6 +73,13 @@ export const TIPO_CONTATO_LABELS: Record<TipoContato, string> = {
   cliente: 'Cliente',
   fornecedor: 'Fornecedor',
   ambos: 'Cliente e fornecedor',
+};
+
+export const TIPO_CONTA_BANCARIA_LABELS: Record<TipoContaBancaria, string> = {
+  corrente: 'Conta corrente',
+  poupanca: 'Poupança',
+  pagamento: 'Conta de pagamento',
+  dinheiro: 'Dinheiro em espécie',
 };
 
 export const GRUPO_DASN_LABELS: Record<GrupoDasn, string> = {

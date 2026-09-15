@@ -37,7 +37,12 @@ import {
 } from '@/components/ui/form-field';
 import { ResponsiveDialog } from '@/components/ui/responsive-dialog';
 import { SkeletonText } from '@/components/ui/skeleton';
-import { categoriasParaOpcoes, useCategorias, useContatosOpcoes } from '@/features/referencias';
+import {
+  categoriasParaOpcoes,
+  useCategorias,
+  useContasBancariasOpcoes,
+  useContatosOpcoes,
+} from '@/features/referencias';
 import { aplicarErrosDoServidor } from '@/lib/api/errors';
 import { hojeSP } from '@/lib/format/date';
 import { FORMA_PAGAMENTO_LABELS, opcoesDe } from '@/lib/labels';
@@ -71,6 +76,7 @@ const lancamentoFormSchema = z
     data: isoDate,
     categoriaId: uuid.or(z.literal('')).refine((v) => v !== '', 'Selecione a categoria'),
     contatoId: z.string().nullable(),
+    contaBancariaId: z.string().nullable(),
     formaPagamento: z.enum(FORMAS_PAGAMENTO).nullable(),
     status: z.enum(STATUS_LANCAMENTO),
     dataPagamento: isoDate.nullable(),
@@ -114,6 +120,7 @@ function valoresIniciais(
       data: lancamento.data,
       categoriaId: lancamento.categoriaId,
       contatoId: lancamento.contatoId,
+      contaBancariaId: lancamento.contaBancariaId,
       formaPagamento: lancamento.formaPagamento,
       status: lancamento.status,
       dataPagamento: lancamento.dataPagamento,
@@ -130,6 +137,7 @@ function valoresIniciais(
     data: hoje,
     categoriaId: '',
     contatoId: null,
+    contaBancariaId: null,
     formaPagamento: 'pix',
     status: 'pago',
     dataPagamento: hoje,
@@ -148,6 +156,7 @@ function montarCriarBody(v: LancamentoFormValores): CriarLancamentoBody {
     descricao: v.descricao,
     categoriaId: v.categoriaId,
     contatoId: v.contatoId || null,
+    contaBancariaId: v.contaBancariaId || null,
     formaPagamento: v.formaPagamento,
     status: v.status,
     dataPagamento: v.status === 'pago' ? (v.dataPagamento ?? v.data) : null,
@@ -172,6 +181,7 @@ function montarAtualizarBody(
     descricao: v.descricao,
     categoriaId: v.categoriaId,
     contatoId: v.contatoId || null,
+    contaBancariaId: v.contaBancariaId || null,
     formaPagamento: v.formaPagamento,
     status: v.status,
     dataPagamento: v.status === 'pago' ? (v.dataPagamento ?? v.data) : null,
@@ -204,6 +214,7 @@ function LancamentoForm({ lancamento, tipoInicial, onClose }: LancamentoFormProp
   });
   const categorias = useCategorias(tipo);
   const contatos = useContatosOpcoes(tipo === 'receita' ? 'cliente' : 'fornecedor');
+  const contasBancarias = useContasBancariasOpcoes();
 
   const tipoAnterior = useRef(tipo);
   useEffect(() => {
@@ -291,6 +302,19 @@ function LancamentoForm({ lancamento, tipoInicial, onClose }: LancamentoFormProp
         />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
+        <FormCombobox
+          control={form.control}
+          name="contaBancariaId"
+          label={
+            tipo === 'receita' ? 'Conta onde o dinheiro caiu' : 'Conta de onde o dinheiro saiu'
+          }
+          opcional
+          options={contasBancarias.opcoes}
+          loading={contasBancarias.isPending}
+          placeholder="Selecione…"
+          clearable
+          disabled={bloqueado}
+        />
         <FormSelect
           control={form.control}
           name="formaPagamento"
@@ -300,6 +324,8 @@ function LancamentoForm({ lancamento, tipoInicial, onClose }: LancamentoFormProp
           opcaoVazia="Não informar"
           disabled={bloqueado}
         />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
         <FormRadioCards
           control={form.control}
           name="status"
@@ -308,15 +334,15 @@ function LancamentoForm({ lancamento, tipoInicial, onClose }: LancamentoFormProp
           options={STATUS_OPCOES}
           disabled={bloqueado}
         />
+        {status === 'pago' ? (
+          <FormDateInput
+            control={form.control}
+            name="dataPagamento"
+            label="Data do pagamento"
+            disabled={bloqueado}
+          />
+        ) : null}
       </div>
-      {status === 'pago' ? (
-        <FormDateInput
-          control={form.control}
-          name="dataPagamento"
-          label="Data do pagamento"
-          disabled={bloqueado}
-        />
-      ) : null}
       <FormTextarea
         control={form.control}
         name="observacoes"

@@ -6,6 +6,7 @@ export * from './auth.js';
 export * from './parametros.js';
 export * from './categorias.js';
 export * from './contatos.js';
+export * from './contas-bancarias.js';
 export * from './lancamentos.js';
 export * from './titulos.js';
 export * from './notas-fiscais.js';

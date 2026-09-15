@@ -10,6 +10,7 @@ import { adminModule } from './admin/index.js';
 import { authModule } from './auth/index.js';
 import { categoriasModule } from './categorias/index.js';
 import { configuracoesModule } from './configuracoes/index.js';
+import { contasBancariasModule } from './contas-bancarias/index.js';
 import { contatosModule } from './contatos/index.js';
 import { dashboardModule } from './dashboard/index.js';
 import { importacoesModule } from './importacoes/index.js';
@@ -39,6 +40,12 @@ export const modules: readonly ModuleDefinition[] = [
   },
   { name: 'categorias', prefix: '/categorias', plugin: categoriasModule, requiresAuth: true },
   { name: 'contatos', prefix: '/contatos', plugin: contatosModule, requiresAuth: true },
+  {
+    name: 'contas-bancarias',
+    prefix: '/contas-bancarias',
+    plugin: contasBancariasModule,
+    requiresAuth: true,
+  },
   { name: 'lancamentos', prefix: '', plugin: lancamentosModule, requiresAuth: true },
   { name: 'importacoes', prefix: '/importacoes', plugin: importacoesModule, requiresAuth: true },
   { name: 'titulos', prefix: '', plugin: titulosModule, requiresAuth: true },

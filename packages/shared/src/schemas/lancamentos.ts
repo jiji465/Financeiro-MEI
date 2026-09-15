@@ -11,6 +11,7 @@ import {
 import {
   categoriaRef,
   centavos,
+  contaBancariaRef,
   centavosPositivo,
   competencia,
   contatoRef,
@@ -71,6 +72,8 @@ export const lancamentoDto = z.object({
   categoria: categoriaRef.nullable(),
   contatoId: uuid.nullable(),
   contato: contatoRef.nullable(),
+  contaBancariaId: uuid.nullable(),
+  contaBancaria: contaBancariaRef.nullable(),
   formaPagamento: z.enum(FORMAS_PAGAMENTO).nullable(),
   status: z.enum(STATUS_LANCAMENTO),
   dataPagamento: isoDate.nullable(),
@@ -110,6 +113,8 @@ const lancamentoCampos = z.object({
   descricao: descricaoLancamento,
   categoriaId: uuid,
   contatoId: uuid.nullable().optional(),
+  /** Conta bancária onde o dinheiro entrou/saiu (opcional: lançamentos antigos não têm). */
+  contaBancariaId: uuid.nullable().optional(),
   formaPagamento: z
     .enum(FORMAS_PAGAMENTO, { error: 'Forma de pagamento inválida' })
     .nullable()
@@ -175,6 +180,7 @@ export const listarLancamentosQuery = refinarPeriodo(
     status: z.enum(STATUS_LANCAMENTO).optional(),
     categoriaId: uuid.optional(),
     contatoId: uuid.optional(),
+    contaBancariaId: uuid.optional(),
     formaPagamento: z.enum(FORMAS_PAGAMENTO).optional(),
     origem: z.enum(ORIGENS_LANCAMENTO).optional(),
     busca: z.string().trim().max(80).optional(),

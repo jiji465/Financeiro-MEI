@@ -9,6 +9,7 @@ import type {
 import { and, asc, desc, eq, gte, ilike, inArray, lte, or, type SQL } from 'drizzle-orm';
 
 import { categorias } from '../../db/schema/categorias.js';
+import { contasBancarias } from '../../db/schema/contas-bancarias.js';
 import { contatos } from '../../db/schema/contatos.js';
 import { lancamentos, type LancamentoRow } from '../../db/schema/lancamentos.js';
 import type { TenantDb } from '../../lib/tenant-db.js';
@@ -26,10 +27,17 @@ export interface ContatoRefRow {
   tipo: string;
 }
 
+export interface ContaBancariaRefRow {
+  id: string;
+  nome: string;
+  tipo: string;
+}
+
 export interface LancamentoComRefs {
   lancamento: LancamentoRow;
   categoria: CategoriaRefRow | null;
   contato: ContatoRefRow | null;
+  contaBancaria: ContaBancariaRefRow | null;
 }
 
 export interface FiltroLancamentos {
@@ -39,6 +47,7 @@ export interface FiltroLancamentos {
   status?: StatusLancamento;
   categoriaId?: string;
   contatoId?: string;
+  contaBancariaId?: string;
   formaPagamento?: FormaPagamento;
   origem?: OrigemLancamento;
   busca?: string;
@@ -67,6 +76,9 @@ function condicoes(tdb: TenantDb, filtro: FiltroLancamentos): SQL {
   if (filtro.status) lista.push(eq(lancamentos.status, filtro.status));
   if (filtro.categoriaId) lista.push(eq(lancamentos.categoriaId, filtro.categoriaId));
   if (filtro.contatoId) lista.push(eq(lancamentos.contatoId, filtro.contatoId));
+  if (filtro.contaBancariaId) {
+    lista.push(eq(lancamentos.contaBancariaId, filtro.contaBancariaId));
+  }
   if (filtro.formaPagamento) lista.push(eq(lancamentos.formaPagamento, filtro.formaPagamento));
   if (filtro.origem) lista.push(eq(lancamentos.origem, filtro.origem));
   if (filtro.recorrenciaId) lista.push(eq(lancamentos.recorrenciaId, filtro.recorrenciaId));
@@ -93,6 +105,11 @@ const SELECAO = {
     nome: contatos.nome,
     tipo: contatos.tipo,
   },
+  contaBancaria: {
+    id: contasBancarias.id,
+    nome: contasBancarias.nome,
+    tipo: contasBancarias.tipo,
+  },
 };
 
 type LinhaBruta = {
@@ -104,6 +121,7 @@ type LinhaBruta = {
     icone: string | null;
   } | null;
   contato: { id: string | null; nome: string | null; tipo: string | null } | null;
+  contaBancaria: { id: string | null; nome: string | null; tipo: string | null } | null;
 };
 
 function normalizar(linha: LinhaBruta): LancamentoComRefs {
@@ -120,7 +138,15 @@ function normalizar(linha: LinhaBruta): LancamentoComRefs {
     linha.contato && linha.contato.id && linha.contato.nome !== null
       ? { id: linha.contato.id, nome: linha.contato.nome, tipo: linha.contato.tipo ?? '' }
       : null;
-  return { lancamento: linha.lancamento, categoria, contato };
+  const contaBancaria =
+    linha.contaBancaria && linha.contaBancaria.id && linha.contaBancaria.nome !== null
+      ? {
+          id: linha.contaBancaria.id,
+          nome: linha.contaBancaria.nome,
+          tipo: linha.contaBancaria.tipo ?? '',
+        }
+      : null;
+  return { lancamento: linha.lancamento, categoria, contato, contaBancaria };
 }
 
 function consultaComRefs(tdb: TenantDb) {
@@ -137,6 +163,13 @@ function consultaComRefs(tdb: TenantDb) {
     .leftJoin(
       contatos,
       and(eq(contatos.tenantId, lancamentos.tenantId), eq(contatos.id, lancamentos.contatoId)),
+    )
+    .leftJoin(
+      contasBancarias,
+      and(
+        eq(contasBancarias.tenantId, lancamentos.tenantId),
+        eq(contasBancarias.id, lancamentos.contaBancariaId),
+      ),
     );
 }
 
@@ -255,6 +288,11 @@ export function buscarCategoria(tdb: TenantDb, id: string) {
 
 export function buscarContato(tdb: TenantDb, id: string) {
   return tdb.findByIdOrNull(contatos, id);
+}
+
+/** Conta bancária do tenant por id (valida o vínculo em PATCH sem passar pelo core). */
+export function buscarContaBancaria(tdb: TenantDb, id: string) {
+  return tdb.findByIdOrNull(contasBancarias, id);
 }
 
 /** Categorias ativas do tenant (sugestão de categoria na importação). */

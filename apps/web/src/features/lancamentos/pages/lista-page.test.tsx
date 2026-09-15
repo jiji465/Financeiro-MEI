@@ -34,6 +34,8 @@ function criarLancamento(sobrescrever: Partial<LancamentoDto> = {}): LancamentoD
     },
     contatoId: null,
     contato: null,
+    contaBancariaId: null,
+    contaBancaria: null,
     formaPagamento: 'pix',
     status: 'pago',
     dataPagamento: '2026-09-05',
