@@ -2,7 +2,7 @@
 // cada uma (calculado na API a partir dos lançamentos pagos) e atalho para ver os lançamentos
 // daquela conta. Sem integração bancária: nada aqui conversa com banco nenhum.
 import type { ContaBancariaSaldoDto } from '@meifin/shared';
-import { Banknote, ListFilter, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeftRight, Banknote, ListFilter, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
@@ -25,6 +25,7 @@ import { formatBRL } from '@/lib/format/money';
 import { TIPO_CONTA_BANCARIA_LABELS } from '@/lib/labels';
 
 import { ContaBancariaDialog } from '../components/conta-bancaria-dialog';
+import { TransferenciaDialog } from '../components/transferencia-dialog';
 import { useContasBancarias, useExcluirContaBancaria } from '../hooks';
 
 /** Lançamentos daquela conta, no ano corrente (a lista tem período próprio e começa no mês). */
@@ -44,6 +45,7 @@ export function ContasBancariasListaPage() {
   const excluir = useExcluirContaBancaria();
   const query = useContasBancarias();
   const [dialogo, setDialogo] = useState<{ conta?: ContaBancariaSaldoDto } | null>(null);
+  const [transferindo, setTransferindo] = useState(false);
 
   const totais = query.data?.totais;
   const contas = query.data?.data;
@@ -103,6 +105,22 @@ export function ContasBancariasListaPage() {
       cell: (c) => <span className="text-despesa-700 tabular-nums">{formatBRL(c.despesas)}</span>,
     },
     {
+      id: 'transferencias',
+      header: 'Transferências',
+      numeric: true,
+      hideBelow: 'lg',
+      cell: (c) => {
+        const liquido = c.transferenciasEntrada - c.transferenciasSaida;
+        if (liquido === 0) return <span className="text-zinc-400">—</span>;
+        return (
+          <span className="text-zinc-600 tabular-nums" title="Entre as suas próprias contas">
+            {liquido > 0 ? '+' : '−'}
+            {formatBRL(Math.abs(liquido))}
+          </span>
+        );
+      },
+    },
+    {
       id: 'saldo',
       header: 'Saldo atual',
       numeric: true,
@@ -140,9 +158,24 @@ export function ContasBancariasListaPage() {
         titulo="Contas bancárias"
         descricao="Onde o dinheiro entra e sai. O saldo é calculado pelos lançamentos pagos de cada conta."
         acoes={
-          <Button icon={<Plus aria-hidden="true" />} onClick={() => setDialogo({})}>
-            Nova conta
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              icon={<ArrowLeftRight aria-hidden="true" />}
+              onClick={() => setTransferindo(true)}
+              disabled={(contas?.length ?? 0) < 2}
+              title={
+                (contas?.length ?? 0) < 2
+                  ? 'Cadastre pelo menos duas contas para transferir entre elas'
+                  : undefined
+              }
+            >
+              Transferir
+            </Button>
+            <Button icon={<Plus aria-hidden="true" />} onClick={() => setDialogo({})}>
+              Nova conta
+            </Button>
+          </>
         }
       >
         <Card className="grid gap-px overflow-hidden bg-borda sm:grid-cols-2">
@@ -209,8 +242,8 @@ export function ContasBancariasListaPage() {
 
       {contas && contas.length > 0 ? (
         <p className="mt-3 text-sm text-zinc-500">
-          Saldo = saldo inicial + receitas pagas − despesas pagas vinculadas à conta. Lançamentos
-          pendentes não entram.{' '}
+          Saldo = saldo inicial + receitas pagas − despesas pagas + transferências entre as suas
+          contas. Lançamentos pendentes não entram, e transferência não conta como faturamento.{' '}
           <Link to="/lancamentos" className="text-primary-700 hover:underline">
             Ver lançamentos
           </Link>
@@ -222,6 +255,8 @@ export function ContasBancariasListaPage() {
         aberto={dialogo !== null}
         onOpenChange={(open) => !open && setDialogo(null)}
       />
+
+      <TransferenciaDialog aberto={transferindo} onOpenChange={setTransferindo} />
     </>
   );
 }

@@ -18,6 +18,8 @@ function criarConta(sobrescrever: Partial<ContaBancariaSaldoDto> = {}): ContaBan
     saldo: 170_000,
     receitas: 100_000,
     despesas: 30_000,
+    transferenciasEntrada: 0,
+    transferenciasSaida: 0,
     lancamentos: 3,
     createdAt: '2026-01-10T12:00:00.000Z',
     updatedAt: '2026-01-10T12:00:00.000Z',

@@ -6,8 +6,12 @@ import type {
   ContaBancariaOpcaoDto,
   ContaBancariaSaldoDto,
   CriarContaBancariaBody,
+  CriarTransferenciaBody,
   ListaContasBancariasResponse,
   ListarContasBancariasQuery,
+  ListaTransferenciasResponse,
+  ListarTransferenciasQuery,
+  TransferenciaDto,
 } from '@meifin/shared';
 
 import type { ContaBancariaRow } from '../../db/schema/contas-bancarias.js';
@@ -16,7 +20,11 @@ import { isoTimestamp } from '../../lib/hoje.js';
 import type { TenantDb } from '../../lib/tenant-db.js';
 import * as repo from './repository.js';
 
-/** saldo = saldo inicial + receitas pagas − despesas pagas vinculadas à conta. */
+/**
+ * saldo = saldo inicial + receitas pagas − despesas pagas + transferências recebidas − enviadas.
+ * As transferências entram aqui e em nenhum outro agregado do sistema: mover dinheiro entre as
+ * próprias contas não é faturamento e não pode encostar no limite anual do MEI.
+ */
 export function toContaBancariaDto(linha: repo.ContaComSaldo): ContaBancariaSaldoDto {
   const c = linha.conta;
   return {
@@ -26,9 +34,16 @@ export function toContaBancariaDto(linha: repo.ContaComSaldo): ContaBancariaSald
     tipo: c.tipo,
     saldoInicial: c.saldoInicial,
     ativo: c.ativo,
-    saldo: c.saldoInicial + linha.receitas - linha.despesas,
+    saldo:
+      c.saldoInicial +
+      linha.receitas -
+      linha.despesas +
+      linha.transferenciasEntrada -
+      linha.transferenciasSaida,
     receitas: linha.receitas,
     despesas: linha.despesas,
+    transferenciasEntrada: linha.transferenciasEntrada,
+    transferenciasSaida: linha.transferenciasSaida,
     lancamentos: linha.lancamentos,
     createdAt: isoTimestamp(c.createdAt) ?? c.createdAt,
     updatedAt: isoTimestamp(c.updatedAt) ?? c.updatedAt,
@@ -122,4 +137,72 @@ export async function atualizar(
  */
 export async function excluir(tdb: TenantDb, id: string): Promise<void> {
   await repo.excluir(tdb, id);
+}
+
+// ---------------------------------------------------------------------------
+// Transferências entre contas do próprio MEI
+// ---------------------------------------------------------------------------
+
+function toTransferenciaDto(linha: repo.TransferenciaComContas): TransferenciaDto {
+  const t = linha.transferencia;
+  return {
+    id: t.id,
+    data: t.data,
+    valor: t.valor,
+    contaOrigemId: t.contaOrigemId,
+    contaOrigem: linha.contaOrigem ? toContaBancariaOpcaoDto(linha.contaOrigem) : null,
+    contaDestinoId: t.contaDestinoId,
+    contaDestino: linha.contaDestino ? toContaBancariaOpcaoDto(linha.contaDestino) : null,
+    descricao: t.descricao,
+    observacoes: t.observacoes,
+    createdAt: isoTimestamp(t.createdAt) ?? t.createdAt,
+    updatedAt: isoTimestamp(t.updatedAt) ?? t.updatedAt,
+  };
+}
+
+export async function listarTransferencias(
+  tdb: TenantDb,
+  query: ListarTransferenciasQuery,
+): Promise<ListaTransferenciasResponse> {
+  const { itens, total } = await repo.listarTransferencias(tdb, {
+    de: query.de,
+    ate: query.ate,
+    contaId: query.contaId,
+    page: query.page,
+    pageSize: query.pageSize,
+  });
+  return {
+    data: itens.map(toTransferenciaDto),
+    meta: { page: query.page, pageSize: query.pageSize, total },
+  };
+}
+
+export async function criarTransferencia(
+  tdb: TenantDb,
+  body: CriarTransferenciaBody,
+): Promise<TransferenciaDto> {
+  // As duas contas precisam existir neste MEI (conta de outro tenant → 404, como no resto da
+  // API). O schema já recusa origem = destino; o CHECK do banco é a garantia final caso alguém
+  // chame o service por outro caminho.
+  for (const id of [body.contaOrigemId, body.contaDestinoId]) {
+    const conta = await repo.buscarOuNulo(tdb, id);
+    if (!conta) throw new NotFoundError('Conta bancária não encontrada');
+  }
+
+  const criada = await repo.criarTransferencia(tdb, {
+    data: body.data,
+    valor: body.valor,
+    contaOrigemId: body.contaOrigemId,
+    contaDestinoId: body.contaDestinoId,
+    descricao: body.descricao ?? null,
+    observacoes: body.observacoes ?? null,
+  });
+  const linha = await repo.buscarTransferencia(tdb, criada.id);
+  if (!linha) throw new NotFoundError('Transferência não encontrada');
+  return toTransferenciaDto(linha);
+}
+
+/** Estorno: soft delete. O saldo das duas contas volta ao que era. */
+export async function estornarTransferencia(tdb: TenantDb, id: string): Promise<void> {
+  await repo.estornarTransferencia(tdb, id);
 }

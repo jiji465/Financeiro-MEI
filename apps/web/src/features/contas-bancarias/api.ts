@@ -3,8 +3,11 @@ import type {
   AtualizarContaBancariaBody,
   ContaBancariaResponse,
   CriarContaBancariaBody,
+  CriarTransferenciaBody,
   ListaContasBancariasResponse,
+  ListaTransferenciasResponse,
   OpcoesContasBancariasResponse,
+  TransferenciaResponse,
 } from '@meifin/shared';
 
 import { api } from '@/lib/api/client';
@@ -12,6 +15,15 @@ import { api } from '@/lib/api/client';
 export interface ListarContasBancariasParams {
   /** Omitido = ativas e inativas. */
   ativo?: boolean;
+}
+
+export interface ListarTransferenciasParams {
+  de?: string;
+  ate?: string;
+  /** Saíram OU entraram nesta conta. */
+  contaId?: string;
+  page?: number;
+  pageSize?: number;
 }
 
 export const contasBancariasApi = {
@@ -24,4 +36,13 @@ export const contasBancariasApi = {
   atualizar: (id: string, body: AtualizarContaBancariaBody) =>
     api.patch<ContaBancariaResponse>(`/contas-bancarias/${id}`, body),
   excluir: (id: string) => api.delete<{ data: { ok: true } }>(`/contas-bancarias/${id}`),
+
+  listarTransferencias: (params: ListarTransferenciasParams = {}) =>
+    api.get<ListaTransferenciasResponse>('/contas-bancarias/transferencias', {
+      query: { ...params },
+    }),
+  criarTransferencia: (body: CriarTransferenciaBody) =>
+    api.post<TransferenciaResponse>('/contas-bancarias/transferencias', body),
+  estornarTransferencia: (id: string) =>
+    api.delete<{ data: { ok: true } }>(`/contas-bancarias/transferencias/${id}`),
 };

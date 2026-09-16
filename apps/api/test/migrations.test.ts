@@ -34,6 +34,7 @@ const TABELAS_ESPERADAS = [
   'solicitacoes_acesso',
   'tenants',
   'titulos',
+  'transferencias',
   'users',
 ];
 

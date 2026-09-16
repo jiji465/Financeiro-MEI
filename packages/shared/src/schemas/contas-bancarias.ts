@@ -7,9 +7,15 @@ import { TIPOS_CONTA_BANCARIA } from '../constants.js';
 import {
   booleanoQuery,
   centavos,
+  centavosPositivo,
+  isoDate,
   itemResponse,
   listaResponse,
   okResponse,
+  paginatedResponse,
+  paginationQuery,
+  periodoCampos,
+  refinarPeriodo,
   textoNulavel,
   timestamp,
   uuid,
@@ -30,12 +36,16 @@ export type ContaBancariaDto = z.infer<typeof contaBancariaDto>;
 
 /** Conta + saldo agregado no banco (nunca somado em memória). */
 export const contaBancariaSaldoDto = contaBancariaDto.extend({
-  /** saldoInicial + receitas − despesas. */
+  /** saldoInicial + receitas − despesas + transferências recebidas − enviadas. */
   saldo: centavos,
   /** Receitas pagas vinculadas à conta. */
   receitas: centavos,
   /** Despesas pagas vinculadas à conta. */
   despesas: centavos,
+  /** Transferências recebidas de outra conta do mesmo MEI (não são receita). */
+  transferenciasEntrada: centavos,
+  /** Transferências enviadas para outra conta do mesmo MEI (não são despesa). */
+  transferenciasSaida: centavos,
   /** Lançamentos (pagos ou pendentes, não excluídos) vinculados à conta. */
   lancamentos: z.number().int(),
 });
@@ -94,3 +104,58 @@ export type OpcoesContasBancariasResponse = z.infer<typeof opcoesContasBancarias
 
 export const excluirContaBancariaResponse = okResponse;
 export type ExcluirContaBancariaResponse = z.infer<typeof excluirContaBancariaResponse>;
+
+// ---------------------------------------------------------------------------
+// Transferências entre contas do próprio MEI
+//
+// Não são receita nem despesa: o dinheiro só mudou de lugar. Por isso vivem fora de
+// `lancamentos` e não aparecem em DRE, DASN, limite anual nem nos gráficos de faturamento.
+// ---------------------------------------------------------------------------
+
+export const transferenciaDto = z.object({
+  id: uuid,
+  data: isoDate,
+  valor: centavosPositivo,
+  contaOrigemId: uuid,
+  contaOrigem: contaBancariaOpcaoDto.nullable(),
+  contaDestinoId: uuid,
+  contaDestino: contaBancariaOpcaoDto.nullable(),
+  descricao: z.string().nullable(),
+  observacoes: z.string().nullable(),
+  createdAt: timestamp,
+  updatedAt: timestamp,
+});
+export type TransferenciaDto = z.infer<typeof transferenciaDto>;
+
+export const criarTransferenciaBody = z
+  .object({
+    data: isoDate,
+    valor: centavosPositivo,
+    contaOrigemId: uuid,
+    contaDestinoId: uuid,
+    descricao: textoNulavel,
+    observacoes: textoNulavel,
+  })
+  .refine((t) => t.contaOrigemId !== t.contaDestinoId, {
+    message: 'A conta de destino precisa ser diferente da de origem',
+    path: ['contaDestinoId'],
+  });
+export type CriarTransferenciaBody = z.infer<typeof criarTransferenciaBody>;
+
+export const listarTransferenciasQuery = refinarPeriodo(
+  paginationQuery.extend({
+    ...periodoCampos,
+    /** Transferências que saíram OU entraram nesta conta. */
+    contaId: uuid.optional(),
+  }),
+);
+export type ListarTransferenciasQuery = z.infer<typeof listarTransferenciasQuery>;
+
+export const transferenciaResponse = itemResponse(transferenciaDto);
+export type TransferenciaResponse = z.infer<typeof transferenciaResponse>;
+
+export const listaTransferenciasResponse = paginatedResponse(transferenciaDto);
+export type ListaTransferenciasResponse = z.infer<typeof listaTransferenciasResponse>;
+
+export const estornarTransferenciaResponse = okResponse;
+export type EstornarTransferenciaResponse = z.infer<typeof estornarTransferenciaResponse>;

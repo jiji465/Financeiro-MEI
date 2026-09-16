@@ -488,6 +488,165 @@ describe('contas bancárias', () => {
     });
   });
 
+  describe('transferência entre contas', () => {
+    const transferir = (payload: Record<string, unknown>) =>
+      injectComo(ctx.app, s, { method: 'POST', url: `${URL}/transferencias`, payload });
+
+    it('tira de uma conta e põe na outra; o total das contas não muda', async () => {
+      const origem = await criarConta({ nome: 'Maquininha', saldoInicial: 200_000 });
+      const destino = await criarConta({ nome: 'Banco principal', saldoInicial: 0 });
+      const totalAntes = (await listarContas()).totais.saldo;
+
+      const res = await transferir({
+        data: '2026-06-12',
+        valor: 120_000,
+        contaOrigemId: origem.id,
+        contaDestinoId: destino.id,
+        descricao: 'Saque da maquininha',
+      });
+      expect(res.statusCode).toBe(201);
+      expect(res.json<{ data: { contaOrigem: { nome: string } } }>().data.contaOrigem.nome).toBe(
+        'Maquininha',
+      );
+
+      expect(await obterConta(origem.id)).toMatchObject({
+        saldo: 80_000,
+        transferenciasSaida: 120_000,
+        transferenciasEntrada: 0,
+      });
+      expect(await obterConta(destino.id)).toMatchObject({
+        saldo: 120_000,
+        transferenciasEntrada: 120_000,
+        transferenciasSaida: 0,
+      });
+      // Dinheiro só mudou de lugar: a soma das contas é a mesma de antes.
+      expect((await listarContas()).totais.saldo).toBe(totalAntes);
+    });
+
+    it('não vira receita nem despesa: dashboard, DRE e limite anual ficam idênticos', async () => {
+      const periodo = 'de=2026-01-01&ate=2026-12-31';
+      const URLS = [
+        `/api/v1/dashboard/resumo?${periodo}`,
+        `/api/v1/relatorios/dre?${periodo}`,
+        '/api/v1/obrigacoes/limite?ano=2026',
+      ];
+      // `geradoEm` é a hora em que o relatório foi montado: muda a cada chamada e não diz nada
+      // sobre dinheiro. Fora dele, tudo tem que bater exatamente.
+      const semCarimbo = async (url: string) => {
+        const corpo = (await injectComo(ctx.app, s, { method: 'GET', url })).json<{
+          data: Record<string, unknown>;
+        }>();
+        const { geradoEm: _ignorado, ...resto } = corpo.data;
+        return resto;
+      };
+      const antes = await Promise.all(URLS.map(semCarimbo));
+
+      const origem = await criarConta({ nome: 'Conta A da prova', saldoInicial: 500_000 });
+      const destino = await criarConta({ nome: 'Conta B da prova', saldoInicial: 0 });
+      const res = await transferir({
+        data: '2026-06-13',
+        valor: 300_000,
+        contaOrigemId: origem.id,
+        contaDestinoId: destino.id,
+      });
+      expect(res.statusCode).toBe(201);
+
+      // Esta é A regra: uma transferência registrada como receita inflaria o limite anual de
+      // faturamento e poderia desenquadrar o MEI por um dinheiro que ele nunca faturou.
+      const depois = await Promise.all(URLS.map(semCarimbo));
+      expect(depois).toEqual(antes);
+    });
+
+    it('estorno devolve o saldo das duas contas', async () => {
+      const origem = await criarConta({ nome: 'Origem do estorno', saldoInicial: 100_000 });
+      const destino = await criarConta({ nome: 'Destino do estorno', saldoInicial: 0 });
+      const id = (
+        await transferir({
+          data: '2026-06-14',
+          valor: 40_000,
+          contaOrigemId: origem.id,
+          contaDestinoId: destino.id,
+        })
+      ).json<{ data: { id: string } }>().data.id;
+
+      const estorno = await injectComo(ctx.app, s, {
+        method: 'DELETE',
+        url: `${URL}/transferencias/${id}`,
+      });
+      expect(estorno.statusCode).toBe(200);
+      expect((await obterConta(origem.id)).saldo).toBe(100_000);
+      expect((await obterConta(destino.id)).saldo).toBe(0);
+    });
+
+    it('saldo certo numa conta que tem lançamentos E transferências nos dois sentidos', async () => {
+      // Pega produto cartesiano: com LEFT JOIN direto em duas tabelas-filhas, as receitas
+      // seriam contadas uma vez por transferência.
+      const conta = await criarConta({ nome: 'Conta movimentada', saldoInicial: 10_000 });
+      const outra = await criarConta({
+        nome: 'Conta ao lado da movimentada',
+        saldoInicial: 50_000,
+      });
+      for (const valor of [7_000, 3_000]) {
+        await criarLancamento({
+          tipo: 'receita',
+          data: '2026-06-15',
+          valor,
+          descricao: `Receita de ${valor}`,
+          categoriaId: categoriaReceita,
+          contaBancariaId: conta.id,
+          status: 'pago',
+        });
+      }
+      await transferir({
+        data: '2026-06-15',
+        valor: 2_000,
+        contaOrigemId: conta.id,
+        contaDestinoId: outra.id,
+      });
+      await transferir({
+        data: '2026-06-16',
+        valor: 5_000,
+        contaOrigemId: outra.id,
+        contaDestinoId: conta.id,
+      });
+
+      expect(await obterConta(conta.id)).toMatchObject({
+        receitas: 10_000, // 7.000 + 3.000, contados UMA vez
+        despesas: 0,
+        transferenciasSaida: 2_000,
+        transferenciasEntrada: 5_000,
+        saldo: 23_000, // 10.000 + 10.000 − 2.000 + 5.000
+      });
+    });
+
+    it('origem igual ao destino → 400; conta inexistente → 404; valor zero → 400', async () => {
+      const conta = await criarConta({ nome: 'Conta da validação' });
+      const mesma = await transferir({
+        data: '2026-06-17',
+        valor: 1_000,
+        contaOrigemId: conta.id,
+        contaDestinoId: conta.id,
+      });
+      expect(mesma.statusCode).toBe(400);
+
+      const inexistente = await transferir({
+        data: '2026-06-17',
+        valor: 1_000,
+        contaOrigemId: conta.id,
+        contaDestinoId: '00000000-0000-4000-8000-000000000000',
+      });
+      expect(inexistente.statusCode).toBe(404);
+
+      const zero = await transferir({
+        data: '2026-06-17',
+        valor: 0,
+        contaOrigemId: conta.id,
+        contaDestinoId: (await criarConta({ nome: 'Outra da validação' })).id,
+      });
+      expect(zero.statusCode).toBe(400);
+    });
+  });
+
   describe('atualização e exclusão', () => {
     it('PATCH renomeia, troca tipo e desativa', async () => {
       const conta = await criarConta({ nome: 'Conta a editar', tipo: 'corrente' });

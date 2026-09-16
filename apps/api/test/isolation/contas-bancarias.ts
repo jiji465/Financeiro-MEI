@@ -11,21 +11,38 @@ export const recursos: RecursoIsolamento[] = [
       'GET /api/v1/contas-bancarias/:id',
       'PATCH /api/v1/contas-bancarias/:id',
       'DELETE /api/v1/contas-bancarias/:id',
+      'DELETE /api/v1/contas-bancarias/transferencias/:id',
     ],
     async preparar(app, a) {
-      const conta = await app.inject({
+      const criarConta = async (nome: string) => {
+        const res = await app.inject({
+          method: 'POST',
+          url: '/api/v1/contas-bancarias',
+          headers: a.headers,
+          payload: { nome, instituicao: 'Banco Secreto', tipo: 'corrente', saldoInicial: 100_000 },
+        });
+        if (res.statusCode !== 201) throw new Error(`preparar contas-bancarias: ${res.body}`);
+        return res.json<{ data: { id: string } }>().data.id;
+      };
+      const contaId = await criarConta('Conta secreta de A');
+      const contaDestinoId = await criarConta('Segunda conta secreta de A');
+
+      const transferencia = await app.inject({
         method: 'POST',
-        url: '/api/v1/contas-bancarias',
+        url: '/api/v1/contas-bancarias/transferencias',
         headers: a.headers,
         payload: {
-          nome: 'Conta secreta de A',
-          instituicao: 'Banco Secreto',
-          tipo: 'corrente',
-          saldoInicial: 100_000,
+          data: '2026-06-10',
+          valor: 20_000,
+          contaOrigemId: contaId,
+          contaDestinoId,
+          descricao: 'Transferência secreta de A',
         },
       });
-      if (conta.statusCode !== 201) throw new Error(`preparar contas-bancarias: ${conta.body}`);
-      const contaId = conta.json<{ data: { id: string } }>().data.id;
+      if (transferencia.statusCode !== 201) {
+        throw new Error(`preparar transferencias: ${transferencia.body}`);
+      }
+      const transferenciaId = transferencia.json<{ data: { id: string } }>().data.id;
 
       const cats = await app.inject({
         method: 'GET',
@@ -34,7 +51,7 @@ export const recursos: RecursoIsolamento[] = [
       });
       const categoriaId = cats.json<{ data: { id: string }[] }>().data[0]!.id;
 
-      return { contaId, categoriaId, tenantIdA: a.tenantId };
+      return { contaId, contaDestinoId, transferenciaId, categoriaId, tenantIdA: a.tenantId };
     },
     casos: [
       {
@@ -101,6 +118,33 @@ export const recursos: RecursoIsolamento[] = [
         }),
         status: [200],
         naoDeveConter: (ids) => [ids.contaId!],
+      },
+      {
+        nome: 'DELETE /contas-bancarias/transferencias/:id de A como B → 404',
+        requisicao: (ids) => ({
+          method: 'DELETE',
+          url: `/api/v1/contas-bancarias/transferencias/${ids.transferenciaId}`,
+        }),
+      },
+      {
+        nome: 'GET /contas-bancarias/transferencias como B não lista a de A',
+        requisicao: () => ({ method: 'GET', url: '/api/v1/contas-bancarias/transferencias' }),
+        status: [200],
+        naoDeveConter: (ids) => [ids.transferenciaId!, 'Transferência secreta de A'],
+      },
+      {
+        nome: 'POST transferência como B usando as contas de A → 404',
+        requisicao: (ids) => ({
+          method: 'POST',
+          url: '/api/v1/contas-bancarias/transferencias',
+          payload: {
+            data: '2026-06-11',
+            valor: 5_000,
+            contaOrigemId: ids.contaId,
+            contaDestinoId: ids.contaDestinoId,
+          },
+        }),
+        status: [404, 422],
       },
     ],
   },

@@ -10,4 +10,5 @@ export const contasBancariasKeys = {
   lista: (params: QueryParams) => ['contas-bancarias', 'lista', params] as const,
   opcoes: () => ['contas-bancarias', 'opcoes'] as const,
   detalhe: (id: string) => ['contas-bancarias', 'detalhe', id] as const,
+  transferencias: (params: QueryParams) => ['contas-bancarias', 'transferencias', params] as const,
 };

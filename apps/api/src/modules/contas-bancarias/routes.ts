@@ -4,12 +4,17 @@ import {
   atualizarContaBancariaBody,
   contaBancariaResponse,
   criarContaBancariaBody,
+  criarTransferenciaBody,
   errorResponse,
+  estornarTransferenciaResponse,
   excluirContaBancariaResponse,
   idParam,
   listaContasBancariasResponse,
   listarContasBancariasQuery,
+  listaTransferenciasResponse,
+  listarTransferenciasQuery,
   opcoesContasBancariasResponse,
+  transferenciaResponse,
 } from '@meifin/shared';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 
@@ -57,6 +62,62 @@ export const contasBancariasRoutes: FastifyPluginAsyncZod = async (app) => {
     async (request, reply) => {
       const data = await service.criar(forTenant(app.db, request.tenantId), request.body);
       return reply.status(201).send({ data });
+    },
+  );
+
+  // Transferências: declaradas ANTES de '/:id' para a rota estática ganhar da paramétrica,
+  // mesmo motivo de '/opcoes' acima.
+  app.get(
+    '/transferencias',
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Lista transferências entre contas (?de&ate&contaId)',
+        querystring: listarTransferenciasQuery,
+        response: { 200: listaTransferenciasResponse, 400: errorResponse, 401: errorResponse },
+      },
+    },
+    async (request) =>
+      service.listarTransferencias(forTenant(app.db, request.tenantId), request.query),
+  );
+
+  app.post(
+    '/transferencias',
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Move dinheiro entre duas contas do MEI (não é receita nem despesa)',
+        body: criarTransferenciaBody,
+        response: {
+          201: transferenciaResponse,
+          400: errorResponse,
+          404: errorResponse,
+          422: errorResponse,
+        },
+      },
+    },
+    async (request, reply) => {
+      const data = await service.criarTransferencia(
+        forTenant(app.db, request.tenantId),
+        request.body,
+      );
+      return reply.status(201).send({ data });
+    },
+  );
+
+  app.delete(
+    '/transferencias/:id',
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Estorna a transferência (o saldo das duas contas volta ao que era)',
+        params: idParam,
+        response: { 200: estornarTransferenciaResponse, 404: errorResponse },
+      },
+    },
+    async (request) => {
+      await service.estornarTransferencia(forTenant(app.db, request.tenantId), request.params.id);
+      return { data: { ok: true as const } };
     },
   );
 
