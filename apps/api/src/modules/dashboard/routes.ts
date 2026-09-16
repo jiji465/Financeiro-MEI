@@ -11,6 +11,8 @@ import {
   porCategoriaResponse,
   porContatoQuery,
   porContatoResponse,
+  porProdutoQuery,
+  porProdutoResponse,
   refinarPeriodo,
   resumoDashboardResponse,
 } from '@meifin/shared';
@@ -47,6 +49,15 @@ export const contatoQuery = refinarPeriodo(
     tipo: porContatoQuery.shape.tipo,
     somentePagos: porContatoQuery.shape.somentePagos,
     limite: porContatoQuery.shape.limite,
+  }),
+);
+export const produtoQuery = refinarPeriodo(
+  z.object({
+    ...periodoOpcional,
+    tipo: porProdutoQuery.shape.tipo,
+    somentePagos: porProdutoQuery.shape.somentePagos,
+    ordenarPor: porProdutoQuery.shape.ordenarPor,
+    limite: porProdutoQuery.shape.limite,
   }),
 );
 
@@ -108,6 +119,25 @@ export const dashboardRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request) => ({
       data: await service.porCategoria(
+        forTenant(app.db, request.tenantId),
+        request.query,
+        app.hoje(),
+      ),
+    }),
+  );
+
+  app.get(
+    '/por-produto',
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Produtos e serviços mais vendidos (lê os itens das vendas)',
+        querystring: produtoQuery,
+        response: { 200: porProdutoResponse, 400: errorResponse, 401: errorResponse },
+      },
+    },
+    async (request) => ({
+      data: await service.porProduto(
         forTenant(app.db, request.tenantId),
         request.query,
         app.hoje(),

@@ -1,7 +1,13 @@
 // Consultas (somente leitura) do dashboard. Lê lancamentos, parcelas/titulos, das_pagamentos,
 // categorias, contatos, tenants/configuracoes e parametros_mei diretamente — nunca importa
 // services de outros módulos. Todo agregado monetário é ::int em centavos (tdb.sumInt).
-import type { ItemFluxo, ParametrosMei, RegimeApuracao, TipoLancamento } from '@meifin/shared';
+import type {
+  ItemFluxo,
+  ParametrosMei,
+  RegimeApuracao,
+  TipoLancamento,
+  TipoProdutoServico,
+} from '@meifin/shared';
 import { and, asc, desc, eq, gt, gte, isNull, lt, lte, ne, sql } from 'drizzle-orm';
 
 import type { DbExecutor } from '../../db/index.js';
@@ -10,6 +16,7 @@ import { contatos } from '../../db/schema/contatos.js';
 import { lancamentos } from '../../db/schema/lancamentos.js';
 import { dasPagamentos } from '../../db/schema/obrigacoes.js';
 import { parametrosMei } from '../../db/schema/parametros.js';
+import { lancamentoItens, produtosServicos } from '../../db/schema/produtos-servicos.js';
 import {
   type ConfiguracoesRow,
   configuracoes,
@@ -260,6 +267,85 @@ export async function somarPorCategoria(
     .where(and(...condicoes))
     .groupBy(categorias.id, categorias.nome, categorias.cor, categorias.icone)
     .orderBy(desc(sql`sum(${lancamentos.valor})`), asc(categorias.nome));
+}
+
+export interface FiltroPorProduto {
+  de: string;
+  ate: string;
+  tipo?: TipoProdutoServico;
+  somentePagos: boolean;
+  ordenarPor: 'valor' | 'quantidade';
+}
+
+export interface LinhaPorProduto {
+  produtoServicoId: string;
+  nome: string;
+  tipo: TipoProdutoServico;
+  unidade: string | null;
+  valor: number;
+  quantidade: number;
+  vendas: number;
+}
+
+/**
+ * Faturamento e quantidade por item do catálogo, a partir de `lancamento_itens`.
+ *
+ * Só olha RECEITA: "mais vendidos" é sobre o que sai, não sobre o que se compra. Vendas
+ * registradas sem itens não aparecem aqui — por isso o total desta consulta é menor que o
+ * faturamento do período, e a tela avisa.
+ */
+export async function somarPorProduto(
+  tdb: TenantDb,
+  f: FiltroPorProduto,
+): Promise<LinhaPorProduto[]> {
+  const condicoes = [
+    tdb.scoped(lancamentos),
+    eq(lancamentos.tipo, 'receita'),
+    gte(lancamentos.data, f.de),
+    lte(lancamentos.data, f.ate),
+  ];
+  if (f.somentePagos) condicoes.push(eq(lancamentos.status, 'pago'));
+  if (f.tipo) condicoes.push(eq(produtosServicos.tipo, f.tipo));
+
+  const soma = sql`sum(${lancamentoItens.valorTotal})`;
+  const somaQtd = sql`sum(${lancamentoItens.quantidade})`;
+  return tdb.exec
+    .select({
+      produtoServicoId: produtosServicos.id,
+      nome: produtosServicos.nome,
+      tipo: produtosServicos.tipo,
+      unidade: produtosServicos.unidade,
+      valor: tdb.sumInt(lancamentoItens.valorTotal),
+      quantidade: tdb.sumInt(lancamentoItens.quantidade),
+      // Uma venda pode repetir o mesmo item em duas linhas; distinct evita contar duas vezes.
+      vendas: sql<number>`count(distinct ${lancamentoItens.lancamentoId})::int`,
+    })
+    .from(lancamentoItens)
+    .innerJoin(
+      lancamentos,
+      and(
+        eq(lancamentos.tenantId, lancamentoItens.tenantId),
+        eq(lancamentos.id, lancamentoItens.lancamentoId),
+      ),
+    )
+    .innerJoin(
+      produtosServicos,
+      and(
+        eq(produtosServicos.tenantId, lancamentoItens.tenantId),
+        eq(produtosServicos.id, lancamentoItens.produtoServicoId),
+      ),
+    )
+    .where(and(...condicoes))
+    .groupBy(
+      produtosServicos.id,
+      produtosServicos.nome,
+      produtosServicos.tipo,
+      produtosServicos.unidade,
+    )
+    .orderBy(
+      f.ordenarPor === 'quantidade' ? desc(somaQtd) : desc(soma),
+      asc(produtosServicos.nome),
+    );
 }
 
 export interface LinhaPorContato {

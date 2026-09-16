@@ -8,6 +8,8 @@ import type {
   PorCategoriaResponse,
   PorContatoQuery,
   PorContatoResponse,
+  PorProdutoQuery,
+  PorProdutoResponse,
   ResumoDashboardQuery,
   ResumoDashboardResponse,
 } from '@meifin/shared';
@@ -24,6 +26,8 @@ export const dashboardApi = {
     api.get<PorCategoriaResponse>('/dashboard/por-categoria', { query: query as QueryParams }),
   porContato: (query: Partial<PorContatoQuery> = {}) =>
     api.get<PorContatoResponse>('/dashboard/por-contato', { query: query as QueryParams }),
+  porProduto: (query: Partial<PorProdutoQuery> = {}) =>
+    api.get<PorProdutoResponse>('/dashboard/por-produto', { query: query as QueryParams }),
   comparativoMensal: (query: Partial<ComparativoMensalQuery> = {}) =>
     api.get<ComparativoMensalResponse>('/dashboard/comparativo-mensal', {
       query: query as QueryParams,

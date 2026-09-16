@@ -20,6 +20,8 @@ import {
   type FluxoCaixaDto,
   type PorCategoriaDto,
   type PorContatoDto,
+  type PorProdutoDto,
+  type PorProdutoQuery,
   type ComparativoMensalDto,
   type SituacaoLimite,
   selecionarParametros,
@@ -262,6 +264,38 @@ export async function porCategoria(
     });
   }
   return { periodo, tipo: query.tipo, total, itens };
+}
+
+/**
+ * Ranking do catálogo. Sem agregado "Outros": o que fica fora do limite entra apenas no `total`,
+ * porque somar quantidades de itens com unidades diferentes (kg com hora com unidade) daria um
+ * número sem significado nenhum.
+ */
+export async function porProduto(
+  tdb: TenantDb,
+  // de/ate opcionais como nas demais rotas do dashboard: sem período, resolverPeriodo usa o mês.
+  query: Omit<PorProdutoQuery, 'de' | 'ate'> & { de?: string; ate?: string },
+  hoje: IsoDate,
+): Promise<PorProdutoDto> {
+  const periodo = resolverPeriodo(query, hoje);
+  const linhas = await repo.somarPorProduto(tdb, {
+    ...periodo,
+    tipo: query.tipo,
+    somentePagos: query.somentePagos,
+    ordenarPor: query.ordenarPor,
+  });
+  const total = linhas.reduce((s, l) => s + l.valor, 0);
+  const itens: PorProdutoDto['itens'] = linhas.slice(0, query.limite).map((l) => ({
+    produtoServicoId: l.produtoServicoId,
+    nome: l.nome,
+    tipo: l.tipo,
+    unidade: l.unidade,
+    valor: l.valor,
+    percentual: percentualDe(l.valor, total),
+    quantidade: l.quantidade,
+    vendas: l.vendas,
+  }));
+  return { periodo, total, itens };
 }
 
 export async function porContato(

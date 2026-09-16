@@ -5,6 +5,7 @@ import type {
   FluxoCaixaQuery,
   PorCategoriaQuery,
   PorContatoQuery,
+  PorProdutoQuery,
   ResumoDashboardQuery,
 } from '@meifin/shared';
 import { useQuery } from '@tanstack/react-query';
@@ -45,6 +46,15 @@ export function usePorContato(query: Partial<PorContatoQuery> = {}) {
   return useQuery({
     queryKey: dashboardKeys.porContato(query),
     queryFn: () => dashboardApi.porContato(query),
+    select: (res) => res.data,
+    staleTime: UM_MINUTO,
+  });
+}
+
+export function usePorProduto(query: Partial<PorProdutoQuery> = {}) {
+  return useQuery({
+    queryKey: dashboardKeys.porProduto(query),
+    queryFn: () => dashboardApi.porProduto(query),
     select: (res) => res.data,
     staleTime: UM_MINUTO,
   });

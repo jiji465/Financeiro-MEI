@@ -8,6 +8,8 @@ export const dashboardKeys = {
     [...dashboardKeys.all, 'por-categoria', query] as const,
   porContato: (query: Record<string, unknown> = {}) =>
     [...dashboardKeys.all, 'por-contato', query] as const,
+  porProduto: (query: Record<string, unknown> = {}) =>
+    [...dashboardKeys.all, 'por-produto', query] as const,
   comparativoMensal: (query: Record<string, unknown> = {}) =>
     [...dashboardKeys.all, 'comparativo-mensal', query] as const,
 };

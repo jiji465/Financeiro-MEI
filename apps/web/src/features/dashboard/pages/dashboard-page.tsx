@@ -14,6 +14,7 @@ import { useSearchParamsObject } from '@/lib/hooks';
 import { Atalhos } from '../components/atalhos';
 import { CategoriaDonut } from '../components/categoria-donut';
 import { ComparativoChart } from '../components/comparativo-chart';
+import { MaisVendidos } from '../components/mais-vendidos';
 import { ProximosVencimentos } from '../components/proximos-vencimentos';
 import { ResumoCards } from '../components/resumo-cards';
 import { SaldosContas } from '../components/saldos-contas';
@@ -129,21 +130,29 @@ function DashboardPageConteudo() {
           </Card>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Despesas por categoria</CardTitle>
-            <CardDescription>No período selecionado.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CategoriaDonut
-              dados={porCategoria.data}
-              loading={porCategoria.isPending}
-              isError={porCategoria.isError}
-              error={porCategoria.error}
-              onRetry={() => void porCategoria.refetch()}
-            />
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 md:gap-5">
+          <Card>
+            <CardHeader>
+              <CardTitle>Despesas por categoria</CardTitle>
+              <CardDescription>No período selecionado.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CategoriaDonut
+                dados={porCategoria.data}
+                loading={porCategoria.isPending}
+                isError={porCategoria.isError}
+                error={porCategoria.error}
+                onRetry={() => void porCategoria.refetch()}
+              />
+            </CardContent>
+          </Card>
+
+          <MaisVendidos
+            de={periodo.de}
+            ate={periodo.ate}
+            receitaDoPeriodo={resumo.data?.receitas.valor}
+          />
+        </div>
       </div>
     </>
   );

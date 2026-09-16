@@ -1,7 +1,12 @@
 // Contratos do módulo "dashboard" (seção 4 do plano): resumo, fluxo de caixa, por categoria/contato, comparativo mensal.
 import { z } from 'zod';
 
-import { AGRUPAMENTOS_FLUXO, TIPOS_LANCAMENTO, TIPOS_TITULO } from '../constants.js';
+import {
+  AGRUPAMENTOS_FLUXO,
+  TIPOS_LANCAMENTO,
+  TIPOS_PRODUTO_SERVICO,
+  TIPOS_TITULO,
+} from '../constants.js';
 import {
   booleanoQuery,
   centavos,
@@ -162,6 +167,51 @@ export type PorContatoDto = z.infer<typeof porContatoDto>;
 
 export const porContatoResponse = itemResponse(porContatoDto);
 export type PorContatoResponse = z.infer<typeof porContatoResponse>;
+
+// ---------------------------------------------------------------------------
+// Por produto/serviço
+//
+// Lê os ITENS dos lançamentos (lancamento_itens), não os lançamentos: a pergunta aqui é "o que
+// eu vendo mais", e só os itens sabem o quê. Vendas lançadas sem itens simplesmente não entram —
+// o total daqui é menor que o faturamento, e a tela precisa dizer isso.
+// ---------------------------------------------------------------------------
+
+export const porProdutoQuery = periodoQuery.safeExtend({
+  /** 'produto' | 'servico' para recortar o catálogo; omitido = os dois. */
+  tipo: z.enum(TIPOS_PRODUTO_SERVICO).optional(),
+  /** Só lançamentos pagos (padrão true). */
+  somentePagos: booleanoQuery.default(true),
+  /** Ordena por faturamento (padrão) ou por quantidade vendida. */
+  ordenarPor: z.enum(['valor', 'quantidade']).default('valor'),
+  limite: z.coerce.number().int().min(1).max(50).default(10),
+});
+export type PorProdutoQuery = z.infer<typeof porProdutoQuery>;
+
+export const itemPorProdutoDto = z.object({
+  produtoServicoId: uuid,
+  nome: z.string(),
+  tipo: z.enum(TIPOS_PRODUTO_SERVICO),
+  unidade: z.string().nullable(),
+  /** Faturamento do item no período (soma dos totais das linhas). */
+  valor: centavos,
+  percentual: z.number(),
+  /** Quantidade vendida em MILÉSIMOS de unidade (1 un = 1000), como no resto do catálogo. */
+  quantidade: z.number().int(),
+  /** Em quantas vendas diferentes o item apareceu. */
+  vendas: z.number().int(),
+});
+export type ItemPorProdutoDto = z.infer<typeof itemPorProdutoDto>;
+
+export const porProdutoDto = z.object({
+  periodo: periodoDto,
+  /** Total dos itens listados + os que ficaram fora do limite. */
+  total: centavos,
+  itens: z.array(itemPorProdutoDto),
+});
+export type PorProdutoDto = z.infer<typeof porProdutoDto>;
+
+export const porProdutoResponse = itemResponse(porProdutoDto);
+export type PorProdutoResponse = z.infer<typeof porProdutoResponse>;
 
 // ---------------------------------------------------------------------------
 // Comparativo mensal
