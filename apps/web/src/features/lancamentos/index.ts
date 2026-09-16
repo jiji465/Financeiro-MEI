@@ -13,6 +13,10 @@ export const lancamentosModule: AppModule = {
       lazy: async () => ({ Component: (await import('./pages/lista-page')).LancamentosListaPage }),
     },
     {
+      path: '/lancamentos/repeticoes',
+      lazy: async () => ({ Component: (await import('./pages/repeticoes-page')).RepeticoesPage }),
+    },
+    {
       path: '/relatorios/importar',
       lazy: async () => ({
         Component: (await import('../relatorios/importar/pages/importar-page')).ImportarCsvPage,

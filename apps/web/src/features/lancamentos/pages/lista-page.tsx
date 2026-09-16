@@ -286,6 +286,9 @@ export function LancamentosListaPage() {
           // botões cheios lado a lado anulam a hierarquia — o secundário neutro resolve.
           <>
             <Button variant="ghost" asChild>
+              <Link to="/lancamentos/repeticoes">Repetições</Link>
+            </Button>
+            <Button variant="ghost" asChild>
               <Link to="/relatorios/importar">Importar CSV</Link>
             </Button>
             <Button
