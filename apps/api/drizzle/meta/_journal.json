@@ -43,6 +43,20 @@
       "when": 1789503173479,
       "tag": "0005_broad_captain_marvel",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789559711333,
+      "tag": "0006_wooden_leech",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789560183282,
+      "tag": "0007_cool_maddog",
+      "breakpoints": true
     }
   ]
 }

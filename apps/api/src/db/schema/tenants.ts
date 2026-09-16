@@ -15,6 +15,7 @@ import {
 
 import { dataNegocio, id, timestamps } from './_common.js';
 import { categorias } from './categorias.js';
+import { contasBancarias } from './contas-bancarias.js';
 import { atividadeEnum, caminhoneiroTributosEnum, regimeApuracaoEnum } from './enums.js';
 
 export interface EnderecoJson {
@@ -69,6 +70,10 @@ export const configuracoes = pgTable(
     diasAlertaDas: integer('dias_alerta_das').notNull().default(7),
     mostrarProjecao: boolean('mostrar_projecao').notNull().default(true),
     categoriaDasId: uuid('categoria_das_id'),
+    /** Conta sugerida nos formulários de dinheiro. É só um valor inicial: o servidor NUNCA
+     * preenche sozinho, senão um lançamento criado sem conta passaria a mexer em saldo sem o
+     * dono ter escolhido. */
+    contaBancariaPadraoId: uuid('conta_bancaria_padrao_id'),
     preferencias: jsonb('preferencias').$type<Record<string, unknown>>().notNull().default({}),
     ...timestamps(),
   },
@@ -78,6 +83,11 @@ export const configuracoes = pgTable(
       name: 'configuracoes_categoria_das_fk',
       columns: [t.tenantId, t.categoriaDasId],
       foreignColumns: [categorias.tenantId, categorias.id],
+    }).onDelete('set null'),
+    foreignKey({
+      name: 'configuracoes_conta_bancaria_padrao_fk',
+      columns: [t.tenantId, t.contaBancariaPadraoId],
+      foreignColumns: [contasBancarias.tenantId, contasBancarias.id],
     }).onDelete('set null'),
   ],
 );
@@ -97,5 +107,9 @@ export const configuracoesRelations = relations(configuracoes, ({ one }) => ({
   categoriaDas: one(categorias, {
     fields: [configuracoes.tenantId, configuracoes.categoriaDasId],
     references: [categorias.tenantId, categorias.id],
+  }),
+  contaBancariaPadrao: one(contasBancarias, {
+    fields: [configuracoes.tenantId, configuracoes.contaBancariaPadraoId],
+    references: [contasBancarias.tenantId, contasBancarias.id],
   }),
 }));

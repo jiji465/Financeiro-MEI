@@ -99,9 +99,7 @@ async function toLancamentoDto(tdb: TenantDb, l: LancamentoRow): Promise<Lancame
     contatoId: l.contatoId,
     contato: refs.contato,
     contaBancariaId: l.contaBancariaId,
-    // Lançamentos gerados por este módulo nascem sem conta bancária (o vínculo é escolhido na
-    // tela de lançamentos); por isso a referência resumida é sempre nula aqui.
-    contaBancaria: null,
+    contaBancaria: refs.contaBancaria,
     formaPagamento: l.formaPagamento,
     status: l.status,
     dataPagamento: l.dataPagamento,
@@ -282,6 +280,7 @@ export async function criar(
       descricao: body.descricao?.trim() || `${LABEL_TIPO[body.tipo]} nº ${body.numero}`,
       categoriaId: body.categoriaId!,
       contatoId: body.contatoId ?? null,
+      contaBancariaId: body.contaBancariaId ?? null,
       formaPagamento: 'pix',
       status: 'pago',
       dataPagamento: body.dataEmissao,

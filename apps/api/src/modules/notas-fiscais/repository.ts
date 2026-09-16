@@ -3,6 +3,7 @@ import type { IsoDate } from '@meifin/shared';
 import { and, asc, desc, eq, gte, ilike, isNull, lte, ne, or, sql, type SQL } from 'drizzle-orm';
 
 import { categorias, type CategoriaRow } from '../../db/schema/categorias.js';
+import { contasBancarias, type ContaBancariaRow } from '../../db/schema/contas-bancarias.js';
 import { contatos, type ContatoRow } from '../../db/schema/contatos.js';
 import { lancamentos, type LancamentoRow } from '../../db/schema/lancamentos.js';
 import { notasFiscais, type NotaFiscalRow } from '../../db/schema/notas-fiscais.js';
@@ -233,13 +234,18 @@ export async function buscarRefsDoLancamento(
 ): Promise<{
   categoria: Pick<CategoriaRow, 'id' | 'nome' | 'cor' | 'icone'> | null;
   contato: ContatoRef | null;
+  contaBancaria: Pick<ContaBancariaRow, 'id' | 'nome' | 'tipo'> | null;
 }> {
   const categoria = await tdb.findByIdOrNull(categorias, l.categoriaId);
   const contato = l.contatoId ? await tdb.findByIdOrNull(contatos, l.contatoId) : null;
+  const conta = l.contaBancariaId
+    ? await tdb.findByIdOrNull(contasBancarias, l.contaBancariaId)
+    : null;
   return {
     categoria: categoria
       ? { id: categoria.id, nome: categoria.nome, cor: categoria.cor, icone: categoria.icone }
       : null,
     contato: contato ? { id: contato.id, nome: contato.nome, tipo: contato.tipo } : null,
+    contaBancaria: conta ? { id: conta.id, nome: conta.nome, tipo: conta.tipo } : null,
   };
 }

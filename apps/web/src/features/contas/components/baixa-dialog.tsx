@@ -13,6 +13,7 @@ import type { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import {
+  FormCombobox,
   FormDateInput,
   FormMoneyInput,
   FormRootError,
@@ -22,6 +23,7 @@ import {
 import { QueryState } from '@/components/ui/query-state';
 import { ResponsiveDialog } from '@/components/ui/responsive-dialog';
 import { SkeletonText } from '@/components/ui/skeleton';
+import { useContaBancariaPadrao, useContasBancariasOpcoes } from '@/features/referencias';
 import { aplicarErrosDoServidor } from '@/lib/api/errors';
 import { formatData, hojeSP } from '@/lib/format/date';
 import { formatBRL } from '@/lib/format/money';
@@ -67,6 +69,8 @@ export function BaixaDialog({ parcelaId, onClose }: BaixaDialogProps) {
 
 function BaixaForm({ parcela, onClose }: { parcela: ParcelaComTituloDto; onClose: () => void }) {
   const baixar = useBaixarParcela();
+  const contasBancarias = useContasBancariasOpcoes();
+  const contaPadrao = useContaBancariaPadrao();
   const textos = TEXTOS_POR_TIPO[parcela.titulo.tipo];
   const form = useForm<BaixaForm, unknown, BaixaParcelaBody>({
     resolver: zodResolver(baixaParcelaBody),
@@ -74,6 +78,7 @@ function BaixaForm({ parcela, onClose }: { parcela: ParcelaComTituloDto; onClose
       dataPagamento: hojeSP(),
       valorPago: parcela.valor,
       formaPagamento: 'pix',
+      contaBancariaId: contaPadrao,
       observacoes: '',
     },
   });
@@ -83,9 +88,10 @@ function BaixaForm({ parcela, onClose }: { parcela: ParcelaComTituloDto; onClose
       dataPagamento: hojeSP(),
       valorPago: parcela.valor,
       formaPagamento: 'pix',
+      contaBancariaId: contaPadrao,
       observacoes: '',
     });
-  }, [form, parcela.id, parcela.valor]);
+  }, [form, parcela.id, parcela.valor, contaPadrao]);
 
   const onSubmit = (valores: BaixaParcelaBody) => {
     baixar.mutate(
@@ -125,12 +131,28 @@ function BaixaForm({ parcela, onClose }: { parcela: ParcelaComTituloDto; onClose
           hint="Pode ser diferente do valor da parcela (juros, desconto)."
         />
       </div>
-      <FormSelect
-        control={form.control}
-        name="formaPagamento"
-        label="Forma de pagamento"
-        options={OPCOES_FORMA}
-      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormSelect
+          control={form.control}
+          name="formaPagamento"
+          label="Forma de pagamento"
+          options={OPCOES_FORMA}
+        />
+        <FormCombobox
+          control={form.control}
+          name="contaBancariaId"
+          label={
+            parcela.titulo.tipo === 'receber'
+              ? 'Conta onde o dinheiro caiu'
+              : 'Conta de onde o dinheiro saiu'
+          }
+          opcional
+          options={contasBancarias.opcoes}
+          loading={contasBancarias.isPending}
+          placeholder="Selecione…"
+          clearable
+        />
+      </div>
       <FormTextarea
         control={form.control}
         name="observacoes"

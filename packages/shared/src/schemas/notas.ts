@@ -72,6 +72,8 @@ export const criarNotaFiscalBody = notaCampos
     /** Cria a receita correspondente (origem nota_fiscal). Exige categoriaId. */
     gerarReceita: z.boolean().default(false),
     categoriaId: uuid.optional(),
+    /** Conta bancária onde a receita gerada caiu. Só faz sentido junto de gerarReceita. */
+    contaBancariaId: uuid.nullable().optional(),
     /** Vincula a uma receita já existente (exclusivo com gerarReceita). */
     lancamentoId: uuid.optional(),
   })
@@ -88,6 +90,13 @@ export const criarNotaFiscalBody = notaCampos
         code: 'custom',
         path: ['lancamentoId'],
         message: 'Não é possível gerar receita e vincular um lançamento ao mesmo tempo',
+      });
+    }
+    if (n.contaBancariaId && !n.gerarReceita) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['contaBancariaId'],
+        message: 'A conta bancária só se aplica quando a receita é gerada',
       });
     }
   });

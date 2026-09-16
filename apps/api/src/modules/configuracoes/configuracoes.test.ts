@@ -230,6 +230,39 @@ describe('configuracoes', () => {
     expect(ok.json().data.categoriaDasId).toBe(despesa.id);
   });
 
+  it('contaBancariaPadraoId: inexistente → 404; própria → ok; null limpa', async () => {
+    const conta = (
+      await injectComo(ctx.app, s, {
+        method: 'POST',
+        url: '/api/v1/contas-bancarias',
+        payload: { nome: 'Conta sugerida' },
+      })
+    ).json<{ data: { id: string } }>().data;
+
+    const nao = await injectComo(ctx.app, s, {
+      method: 'PATCH',
+      url: URL,
+      payload: { contaBancariaPadraoId: '00000000-0000-4000-8000-000000000000' },
+    });
+    expect(nao.statusCode).toBe(404);
+
+    const ok = await injectComo(ctx.app, s, {
+      method: 'PATCH',
+      url: URL,
+      payload: { contaBancariaPadraoId: conta.id },
+    });
+    expect(ok.statusCode).toBe(200);
+    expect(ok.json().data.contaBancariaPadraoId).toBe(conta.id);
+
+    const limpo = await injectComo(ctx.app, s, {
+      method: 'PATCH',
+      url: URL,
+      payload: { contaBancariaPadraoId: null },
+    });
+    expect(limpo.statusCode).toBe(200);
+    expect(limpo.json().data.contaBancariaPadraoId).toBeNull();
+  });
+
   it('corpo vazio é aceito (no-op); valores fora da faixa e UF inválida → 400', async () => {
     const vazio = await injectComo(ctx.app, s, { method: 'PATCH', url: URL, payload: {} });
     expect(vazio.statusCode).toBe(200);

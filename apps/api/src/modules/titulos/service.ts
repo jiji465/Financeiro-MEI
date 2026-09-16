@@ -113,6 +113,7 @@ function toLancamentoDto(
   l: LancamentoRow,
   categoria: repo.CategoriaRef | null,
   contato: repo.ContatoRef | null,
+  contaBancaria: repo.ContaBancariaRef | null = null,
 ): LancamentoDto {
   return {
     id: l.id,
@@ -125,9 +126,9 @@ function toLancamentoDto(
     contatoId: l.contatoId,
     contato,
     contaBancariaId: l.contaBancariaId,
-    // Lançamentos gerados por este módulo nascem sem conta bancária (o vínculo é escolhido na
-    // tela de lançamentos); por isso a referência resumida é sempre nula aqui.
-    contaBancaria: null,
+    // A baixa pode informar em qual conta o dinheiro entrou/saiu; quando informa, a referência
+    // resumida vem junto para a tela não precisar de outra ida ao servidor.
+    contaBancaria,
     formaPagamento: l.formaPagamento,
     status: l.status,
     dataPagamento: l.dataPagamento,
@@ -422,6 +423,7 @@ export async function baixarParcela(
     descricao: `${atual.titulo.descricao}${sufixo}`,
     categoriaId: atual.titulo.categoriaId,
     contatoId: atual.titulo.contatoId,
+    contaBancariaId: body.contaBancariaId ?? null,
     formaPagamento,
     status: 'pago',
     dataPagamento,
@@ -445,9 +447,15 @@ export async function baixarParcela(
   }
 
   const tituloAtual = await obterTituloOu404(tdb, atual.titulo.id);
+  const contaBancaria = await repo.buscarContaBancariaRef(tdb, lancamento.contaBancariaId);
   return {
     parcela: toParcelaComTituloDto(await obterParcelaOu404(tdb, id), hoje),
-    lancamento: toLancamentoDto(lancamento, tituloAtual.categoria, tituloAtual.contato),
+    lancamento: toLancamentoDto(
+      lancamento,
+      tituloAtual.categoria,
+      tituloAtual.contato,
+      contaBancaria,
+    ),
     titulo: toTituloDto(tituloAtual, todas, hoje),
   };
 }

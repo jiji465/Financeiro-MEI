@@ -207,6 +207,9 @@ export async function criar(
       descricao: body.descricao,
       categoriaId: body.categoriaId,
       contatoId: body.contatoId ?? null,
+      // Sem isto, só o primeiro mês nasceria com conta: a materialização dos meses seguintes
+      // lê a conta daqui, não do lançamento.
+      contaBancariaId: body.contaBancariaId ?? null,
       formaPagamento: base.formaPagamento,
       diaDoMes: recorrencia.diaDoMes,
       dataInicio: body.data,

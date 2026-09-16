@@ -12,6 +12,7 @@ import {
 
 import type { DbExecutor } from '../../db/index.js';
 import { categorias } from '../../db/schema/categorias.js';
+import { contasBancarias } from '../../db/schema/contas-bancarias.js';
 import type { ConfiguracoesRow, EnderecoJson, TenantRow } from '../../db/schema/tenants.js';
 import {
   ConflictError,
@@ -68,6 +69,7 @@ export function toConfiguracoesDto(tenant: TenantRow, cfg: ConfiguracoesRow): Co
     diasAlertaDas: cfg.diasAlertaDas,
     mostrarProjecao: cfg.mostrarProjecao,
     categoriaDasId: cfg.categoriaDasId,
+    contaBancariaPadraoId: cfg.contaBancariaPadraoId,
     preferencias: normalizarPreferencias(cfg.preferencias),
     updatedAt: isoTimestamp(cfg.updatedAt) ?? cfg.updatedAt,
   };
@@ -96,6 +98,7 @@ const CAMPOS_CONFIG = [
   'diasAlertaDas',
   'mostrarProjecao',
   'categoriaDasId',
+  'contaBancariaPadraoId',
 ] as const;
 
 /** Deve rodar dentro de uma transação (tx) para tenant e configurações mudarem juntos. */
@@ -154,6 +157,15 @@ export async function atualizar(
         { campo: 'categoriaDasId', mensagem: 'Escolha uma categoria de despesa' },
       ]);
     }
+  }
+
+  // null é legítimo (limpa a sugestão); só um id preenchido precisa existir neste MEI.
+  if (body.contaBancariaPadraoId) {
+    const conta = await forTenant(tx, tenantId).findByIdOrNull(
+      contasBancarias,
+      body.contaBancariaPadraoId,
+    );
+    if (!conta) throw new NotFoundError('Conta bancária não encontrada');
   }
 
   const valoresTenant: Record<string, unknown> = {};

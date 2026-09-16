@@ -6,3 +6,7 @@ coverage
 pnpm-lock.yaml
 apps/api/drizzle
 *.tsbuildinfo
+# Fora do código do produto: worktrees de sessões de agente e materiais de design entregues
+# prontos (HTML/JS de terceiros). Não são nossos arquivos para formatar.
+.claude
+Página de venda Meifinanceiro

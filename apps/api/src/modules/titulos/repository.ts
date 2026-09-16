@@ -3,6 +3,7 @@ import type { IsoDate } from '@meifin/shared';
 import { and, asc, desc, eq, gte, ilike, inArray, lt, lte, or, sql, type SQL } from 'drizzle-orm';
 
 import { categorias, type CategoriaRow } from '../../db/schema/categorias.js';
+import { contasBancarias, type ContaBancariaRow } from '../../db/schema/contas-bancarias.js';
 import { contatos, type ContatoRow } from '../../db/schema/contatos.js';
 import { lancamentos, type LancamentoRow } from '../../db/schema/lancamentos.js';
 import { notasFiscais, type NotaFiscalRow } from '../../db/schema/notas-fiscais.js';
@@ -11,6 +12,7 @@ import type { TenantDb } from '../../lib/tenant-db.js';
 
 export type ContatoRef = Pick<ContatoRow, 'id' | 'nome' | 'tipo'>;
 export type CategoriaRef = Pick<CategoriaRow, 'id' | 'nome' | 'cor' | 'icone'>;
+export type ContaBancariaRef = Pick<ContaBancariaRow, 'id' | 'nome' | 'tipo'>;
 
 export interface TituloComRefs {
   titulo: TituloRow;
@@ -34,6 +36,20 @@ const categoriaRefCols = {
 
 function escaparLike(texto: string): string {
   return texto.replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
+/** Referência resumida da conta bancária de um lançamento de baixa (para o DTO de resposta). */
+export async function buscarContaBancariaRef(
+  tdb: TenantDb,
+  id: string | null,
+): Promise<ContaBancariaRef | null> {
+  if (!id) return null;
+  const [linha] = await tdb.exec
+    .select({ id: contasBancarias.id, nome: contasBancarias.nome, tipo: contasBancarias.tipo })
+    .from(contasBancarias)
+    .where(and(tdb.scoped(contasBancarias), eq(contasBancarias.id, id)))
+    .limit(1);
+  return linha ?? null;
 }
 
 // ---------------------------------------------------------------------------

@@ -15,6 +15,10 @@ export default defineConfig([
     '**/.vite/**',
     'apps/api/drizzle/**',
     'pnpm-lock.yaml',
+    // Fora do código do produto: worktrees de sessões de agente e materiais de design entregues
+    // prontos (HTML/JS de terceiros, escritos para o navegador). Não são nossos arquivos.
+    '.claude/**',
+    'Página de venda Meifinanceiro/**',
   ]),
   js.configs.recommended,
   ...tseslint.configs.recommended,

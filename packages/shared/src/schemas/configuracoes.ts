@@ -65,6 +65,8 @@ export const configuracoesDto = z.object({
   mostrarProjecao: z.boolean(),
   /** Categoria de sistema usada nos pagamentos de DAS. */
   categoriaDasId: uuid.nullable(),
+  /** Conta sugerida nos formulários de dinheiro (só valor inicial de tela, nunca aplicada pela API). */
+  contaBancariaPadraoId: uuid.nullable(),
   preferencias: preferenciasDto,
   updatedAt: timestamp,
 });
@@ -101,6 +103,7 @@ export const atualizarConfiguracoesBody = z
     diasAlertaDas: diasAlerta.optional(),
     mostrarProjecao: z.boolean().optional(),
     categoriaDasId: uuid.optional(),
+    contaBancariaPadraoId: uuid.nullable().optional(),
     preferencias: preferencias.partial().optional(),
   })
   .superRefine((c, ctx) => {

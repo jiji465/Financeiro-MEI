@@ -151,6 +151,8 @@ export const registrarPagamentoDasBody = z.object({
   /** Padrão: valor calculado. Pode diferir (juros/multa em atraso). */
   valorPago: centavosPositivo.optional(),
   formaPagamento: z.enum(FORMAS_PAGAMENTO, { error: 'Forma de pagamento inválida' }).optional(),
+  /** Conta bancária de onde o DAS foi pago; sem ela o pagamento não afeta saldo nenhum. */
+  contaBancariaId: uuid.nullable().optional(),
   observacao: textoNulavel,
 });
 export type RegistrarPagamentoDasBody = z.infer<typeof registrarPagamentoDasBody>;

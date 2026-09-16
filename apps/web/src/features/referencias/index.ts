@@ -10,6 +10,7 @@ export {
   contatosParaOpcoes,
   produtosServicosParaOpcoes,
   useCategorias,
+  useContaBancariaPadrao,
   useContasBancariasOpcoes,
   useContatosOpcoes,
   useDasParametros,

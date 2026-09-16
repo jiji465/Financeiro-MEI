@@ -191,6 +191,8 @@ export const baixaParcelaBody = z.object({
   /** Padrão: valor da parcela. */
   valorPago: centavosPositivo.optional(),
   formaPagamento: z.enum(FORMAS_PAGAMENTO, { error: 'Forma de pagamento inválida' }).optional(),
+  /** Conta bancária onde o dinheiro entrou/saiu; sem ela a baixa não afeta saldo nenhum. */
+  contaBancariaId: uuid.nullable().optional(),
   observacoes: textoNulavel,
 });
 export type BaixaParcelaBody = z.infer<typeof baixaParcelaBody>;

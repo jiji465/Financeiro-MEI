@@ -25,6 +25,7 @@ interface Lanc {
   status: string;
   competencia: string | null;
   recorrenciaId: string | null;
+  contaBancariaId: string | null;
   origem: string;
 }
 
@@ -96,6 +97,43 @@ describe('recorrencias', () => {
       ['2026-08-05', '2026-08', 'pendente', 'recorrencia'],
       ['2026-09-05', '2026-09', 'pendente', 'recorrencia'],
     ]);
+  });
+
+  // Regressão: a conta bancária ficava só no primeiro lançamento (que vem do corpo do POST
+  // /lancamentos); a materialização dos meses seguintes lê a recorrência, que não tinha a coluna.
+  it('a conta bancária vale para TODOS os meses gerados, não só o primeiro', async () => {
+    const conta = (
+      await injectComo(ctx.app, s, {
+        method: 'POST',
+        url: '/api/v1/contas-bancarias',
+        payload: { nome: 'Conta da recorrência' },
+      })
+    ).json<{ data: { id: string } }>().data;
+
+    const res = await injectComo(ctx.app, s, {
+      method: 'POST',
+      url: URL,
+      payload: {
+        tipo: 'despesa',
+        valor: 15_000,
+        descricao: 'Aluguel da sala',
+        categoriaId: despesa.id,
+        contaBancariaId: conta.id,
+        diaDoMes: 10,
+        dataInicio: '2026-07-10',
+        // Encerra no mês corrente: assim esta recorrência não entra nas contagens do teste
+        // seguinte, que chama "gerar todas" do tenant até dezembro.
+        dataFim: '2026-09-30',
+      },
+    });
+    expect(res.statusCode).toBe(201);
+    const rec = res.json().data;
+    expect(rec.contaBancariaId).toBe(conta.id);
+    expect(rec.contaBancaria).toMatchObject({ id: conta.id, nome: 'Conta da recorrência' });
+
+    const gerados = await lancamentosDe(rec.id);
+    expect(gerados.length).toBe(3);
+    expect(gerados.every((l) => l.contaBancariaId === conta.id)).toBe(true);
   });
 
   it('POST /gerar é idempotente e respeita "ate"; dataFim limita a geração', async () => {

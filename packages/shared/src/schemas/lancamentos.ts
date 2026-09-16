@@ -253,6 +253,9 @@ export const recorrenciaDto = z.object({
   categoria: categoriaRef.nullable(),
   contatoId: uuid.nullable(),
   contato: contatoRef.nullable(),
+  /** Repassada a cada lançamento gerado; null nas recorrências criadas antes das contas bancárias. */
+  contaBancariaId: uuid.nullable(),
+  contaBancaria: contaBancariaRef.nullable(),
   formaPagamento: z.enum(FORMAS_PAGAMENTO).nullable(),
   diaDoMes: z.number().int(),
   dataInicio: isoDate,
@@ -270,6 +273,7 @@ const recorrenciaCampos = z.object({
   descricao: descricaoLancamento,
   categoriaId: uuid,
   contatoId: uuid.nullable().optional(),
+  contaBancariaId: uuid.nullable().optional(),
   formaPagamento: z.enum(FORMAS_PAGAMENTO).nullable().optional(),
   diaDoMes: recorrenciaInput.shape.diaDoMes,
   dataInicio: isoDate,

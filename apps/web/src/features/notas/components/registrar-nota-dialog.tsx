@@ -23,7 +23,13 @@ import {
   FormTextarea,
 } from '@/components/ui/form-field';
 import { ResponsiveDialog } from '@/components/ui/responsive-dialog';
-import { categoriasParaOpcoes, useCategorias, useContatosOpcoes } from '@/features/referencias';
+import {
+  categoriasParaOpcoes,
+  useCategorias,
+  useContaBancariaPadrao,
+  useContasBancariasOpcoes,
+  useContatosOpcoes,
+} from '@/features/referencias';
 import { aplicarErrosDoServidor } from '@/lib/api/errors';
 import { hojeSP } from '@/lib/format/date';
 import { opcoesDe, TIPO_NOTA_LABELS } from '@/lib/labels';
@@ -46,6 +52,7 @@ const registrarNotaForm = z.object({
   linkExterno: z.string().trim().max(500).nullable(),
   gerarReceita: z.boolean(),
   categoriaId: z.string().nullable(),
+  contaBancariaId: z.string().nullable(),
 });
 type RegistrarNotaForm = z.input<typeof registrarNotaForm>;
 type RegistrarNotaValores = z.output<typeof registrarNotaForm>;
@@ -62,6 +69,8 @@ function montarBody(v: RegistrarNotaValores) {
     linkExterno: v.linkExterno?.trim() || null,
     gerarReceita: v.gerarReceita,
     categoriaId: v.gerarReceita ? v.categoriaId || undefined : undefined,
+    // A API recusa conta bancária sem "gerar receita" (não haveria lançamento para vinculá-la).
+    contaBancariaId: v.gerarReceita ? v.contaBancariaId || null : null,
   };
 }
 
@@ -76,6 +85,8 @@ export function RegistrarNotaDialog({ open, onOpenChange, tipoPadrao }: Registra
   const criar = useCriarNota();
   const contatos = useContatosOpcoes('cliente');
   const categorias = useCategorias('receita');
+  const contasBancarias = useContasBancariasOpcoes();
+  const contaPadrao = useContaBancariaPadrao();
   const hoje = hojeSP();
 
   const form = useForm<RegistrarNotaForm, unknown, RegistrarNotaValores>({
@@ -91,6 +102,7 @@ export function RegistrarNotaDialog({ open, onOpenChange, tipoPadrao }: Registra
       linkExterno: null,
       gerarReceita: false,
       categoriaId: null,
+      contaBancariaId: contaPadrao,
     },
   });
   const gerarReceita = useWatch({ control: form.control, name: 'gerarReceita' });
@@ -162,7 +174,7 @@ export function RegistrarNotaDialog({ open, onOpenChange, tipoPadrao }: Registra
             hint="Cria automaticamente um lançamento de receita com esta nota."
           />
           {gerarReceita ? (
-            <div className="mt-3">
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
               <FormCombobox
                 control={form.control}
                 name="categoriaId"
@@ -170,6 +182,16 @@ export function RegistrarNotaDialog({ open, onOpenChange, tipoPadrao }: Registra
                 options={categoriasParaOpcoes(categorias.data)}
                 loading={categorias.isPending}
                 placeholder="Selecione…"
+              />
+              <FormCombobox
+                control={form.control}
+                name="contaBancariaId"
+                label="Conta onde o dinheiro caiu"
+                opcional
+                options={contasBancarias.opcoes}
+                loading={contasBancarias.isPending}
+                placeholder="Selecione…"
+                clearable
               />
             </div>
           ) : null}

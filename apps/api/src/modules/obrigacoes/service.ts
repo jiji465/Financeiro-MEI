@@ -275,7 +275,11 @@ export async function obterCompetencia(
   return encontrada;
 }
 
-function toLancamentoDto(row: LancamentoRow, categoria: CategoriaRow): LancamentoDto {
+function toLancamentoDto(
+  row: LancamentoRow,
+  categoria: CategoriaRow,
+  contaBancaria: repo.ContaBancariaRef | null = null,
+): LancamentoDto {
   return {
     id: row.id,
     tipo: row.tipo,
@@ -292,9 +296,9 @@ function toLancamentoDto(row: LancamentoRow, categoria: CategoriaRow): Lancament
     contatoId: row.contatoId,
     contato: null,
     contaBancariaId: row.contaBancariaId,
-    // Lançamentos gerados por este módulo nascem sem conta bancária (o vínculo é escolhido na
-    // tela de lançamentos); por isso a referência resumida é sempre nula aqui.
-    contaBancaria: null,
+    // O pagamento do DAS pode informar de qual conta o dinheiro saiu; quando informa, a referência
+    // resumida vem junto para a tela não precisar de outra ida ao servidor.
+    contaBancaria,
     formaPagamento: row.formaPagamento,
     status: row.status,
     dataPagamento: row.dataPagamento,
@@ -370,6 +374,7 @@ export async function registrarPagamento(
     valor: valorPago,
     descricao: descricaoDas(competencia),
     categoriaId: categoria.id,
+    contaBancariaId: body.contaBancariaId ?? null,
     formaPagamento,
     status: 'pago',
     dataPagamento,
@@ -388,6 +393,8 @@ export async function registrarPagamento(
     observacao: body.observacao ?? null,
   });
 
+  const contaBancaria = await repo.buscarContaBancariaRef(tdb, lancamento.contaBancariaId);
+
   return {
     competencia: {
       ...calculado,
@@ -395,7 +402,7 @@ export async function registrarPagamento(
       diasAtraso: 0,
       pagamento: toPagamentoDto(pagamento),
     },
-    lancamento: toLancamentoDto(lancamento, categoria),
+    lancamento: toLancamentoDto(lancamento, categoria, contaBancaria),
   };
 }
 

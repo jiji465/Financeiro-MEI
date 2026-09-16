@@ -174,6 +174,7 @@ export function criarConfiguracoes(sobrescrever: Partial<ConfiguracoesDto> = {})
     diasAlertaDas: 7,
     mostrarProjecao: true,
     categoriaDasId: '33333333-3333-4333-8333-333333333333',
+    contaBancariaPadraoId: null,
     preferencias: {
       tema: 'sistema',
       ocultarValores: false,

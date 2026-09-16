@@ -36,6 +36,9 @@ export const recorrencias = pgTable(
     descricao: text('descricao').notNull(),
     categoriaId: uuid('categoria_id').notNull(),
     contatoId: uuid('contato_id'),
+    /** Conta repassada a cada lançamento gerado. Nullable: recorrências criadas antes desta
+     * coluna continuam materializando sem conta, como sempre fizeram. */
+    contaBancariaId: uuid('conta_bancaria_id'),
     formaPagamento: formaPagamentoEnum('forma_pagamento').notNull().default('pix'),
     diaDoMes: integer('dia_do_mes').notNull(),
     dataInicio: dataNegocio('data_inicio').notNull(),
@@ -57,6 +60,12 @@ export const recorrencias = pgTable(
       columns: [t.tenantId, t.contatoId],
       foreignColumns: [contatos.tenantId, contatos.id],
     }).onDelete('set null'),
+    // Sem onDelete: conta bancária usa soft delete, igual a lancamentos_conta_bancaria_fk.
+    foreignKey({
+      name: 'recorrencias_conta_bancaria_fk',
+      columns: [t.tenantId, t.contaBancariaId],
+      foreignColumns: [contasBancarias.tenantId, contasBancarias.id],
+    }),
     check('recorrencias_valor_positivo', sql`${t.valor} > 0`),
     check('recorrencias_dia_do_mes_valido', sql`${t.diaDoMes} between 1 and 31`),
     index('recorrencias_tenant_ativo_idx').on(t.tenantId, t.ativo),

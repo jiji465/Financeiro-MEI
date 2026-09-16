@@ -11,7 +11,7 @@ import { FormRadioCards, FormRootError, FormSelect, FormSwitch } from '@/compone
 import { REGIME_APURACAO_LABELS, opcoesDe } from '@/lib/labels';
 
 import { useReabrirTour } from '@/features/onboarding';
-import { categoriasParaOpcoes } from '@/features/referencias/hooks';
+import { categoriasParaOpcoes, useContasBancariasOpcoes } from '@/features/referencias/hooks';
 
 import { useAtualizarConfiguracoes, useCategoriasConfig } from '../hooks';
 import { aplicarErrosAninhados } from '../utils';
@@ -40,6 +40,7 @@ const preferenciasSchema = z.object({
   diasAlertaDas: z.string(),
   mostrarProjecao: z.boolean(),
   categoriaDasId: z.string().optional(),
+  contaBancariaPadraoId: z.string().optional(),
   tema: z.enum(TEMAS),
   ocultarValores: z.boolean(),
   mostrarBoasVindas: z.boolean(),
@@ -55,6 +56,7 @@ function valoresDe(config: ConfiguracoesDto): PreferenciasForm {
     diasAlertaDas: String(config.diasAlertaDas),
     mostrarProjecao: config.mostrarProjecao,
     categoriaDasId: config.categoriaDasId ?? '',
+    contaBancariaPadraoId: config.contaBancariaPadraoId ?? '',
     tema: config.preferencias.tema,
     ocultarValores: config.preferencias.ocultarValores,
     mostrarBoasVindas: config.preferencias.mostrarBoasVindas,
@@ -64,6 +66,7 @@ function valoresDe(config: ConfiguracoesDto): PreferenciasForm {
 export function PreferenciasForm({ config }: { config: ConfiguracoesDto }) {
   const atualizar = useAtualizarConfiguracoes('Preferências salvas.');
   const categoriasDespesa = useCategoriasConfig('despesa');
+  const contasBancarias = useContasBancariasOpcoes();
   const reabrirTour = useReabrirTour();
   const form = useForm<PreferenciasForm, unknown, PreferenciasValores>({
     resolver: zodResolver(preferenciasSchema),
@@ -83,6 +86,8 @@ export function PreferenciasForm({ config }: { config: ConfiguracoesDto }) {
         diasAlertaDas: Number(v.diasAlertaDas),
         mostrarProjecao: v.mostrarProjecao,
         categoriaDasId: v.categoriaDasId || undefined,
+        // Vazio = "não sugerir nada"; precisa virar null explícito para limpar o que estava salvo.
+        contaBancariaPadraoId: v.contaBancariaPadraoId || null,
         preferencias: {
           tema: v.tema,
           ocultarValores: v.ocultarValores,
@@ -137,6 +142,15 @@ export function PreferenciasForm({ config }: { config: ConfiguracoesDto }) {
             value: o.value,
             label: o.label,
           }))}
+        />
+        <FormSelect
+          control={form.control}
+          name="contaBancariaPadraoId"
+          label="Conta bancária sugerida"
+          hint="Vem preenchida nos formulários de dinheiro. Você pode trocar ou apagar em cada lançamento."
+          opcional
+          opcaoVazia="Nenhuma (escolher a cada vez)"
+          options={contasBancarias.opcoes.map((o) => ({ value: o.value, label: o.label }))}
         />
       </div>
 

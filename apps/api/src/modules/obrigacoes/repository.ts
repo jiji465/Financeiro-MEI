@@ -6,6 +6,7 @@ import { and, asc, eq, gte, isNull, lte, or, sql } from 'drizzle-orm';
 
 import type { DbExecutor } from '../../db/index.js';
 import { categorias } from '../../db/schema/categorias.js';
+import { contasBancarias, type ContaBancariaRow } from '../../db/schema/contas-bancarias.js';
 import { lancamentos } from '../../db/schema/lancamentos.js';
 import {
   alertasDispensados,
@@ -26,6 +27,22 @@ import type { TenantDb } from '../../lib/tenant-db.js';
 
 export function listarParametros(exec: DbExecutor): Promise<ParametrosMeiRow[]> {
   return exec.select().from(parametrosMei).orderBy(asc(parametrosMei.ano));
+}
+
+export type ContaBancariaRef = Pick<ContaBancariaRow, 'id' | 'nome' | 'tipo'>;
+
+/** Referência resumida da conta bancária usada no pagamento do DAS (para o DTO de resposta). */
+export async function buscarContaBancariaRef(
+  tdb: TenantDb,
+  id: string | null,
+): Promise<ContaBancariaRef | null> {
+  if (!id) return null;
+  const [linha] = await tdb.exec
+    .select({ id: contasBancarias.id, nome: contasBancarias.nome, tipo: contasBancarias.tipo })
+    .from(contasBancarias)
+    .where(and(tdb.scoped(contasBancarias), eq(contasBancarias.id, id)))
+    .limit(1);
+  return linha ?? null;
 }
 
 // ---------------------------------------------------------------------------

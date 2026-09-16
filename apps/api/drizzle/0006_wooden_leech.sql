@@ -1,0 +1,2 @@
+ALTER TABLE "configuracoes" ADD COLUMN "conta_bancaria_padrao_id" uuid;--> statement-breakpoint
+ALTER TABLE "configuracoes" ADD CONSTRAINT "configuracoes_conta_bancaria_padrao_fk" FOREIGN KEY ("tenant_id","conta_bancaria_padrao_id") REFERENCES "public"."contas_bancarias"("tenant_id","id") ON DELETE set null ON UPDATE no action;

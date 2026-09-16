@@ -45,6 +45,7 @@ import { SkeletonText } from '@/components/ui/skeleton';
 import {
   categoriasParaOpcoes,
   useCategorias,
+  useContaBancariaPadrao,
   useContasBancariasOpcoes,
   useContatosOpcoes,
 } from '@/features/referencias';
@@ -119,6 +120,8 @@ function valoresIniciais(
   lancamento: LancamentoDto | undefined,
   tipoInicial: TipoLancamento,
   hoje: IsoDate,
+  /** Conta sugerida em Configurações; só vale para lançamento novo, nunca sobrescreve o salvo. */
+  contaPadrao: string | null = null,
 ): LancamentoFormInput {
   if (lancamento) {
     return {
@@ -150,7 +153,7 @@ function valoresIniciais(
     data: hoje,
     categoriaId: '',
     contatoId: null,
-    contaBancariaId: null,
+    contaBancariaId: contaPadrao,
     formaPagamento: 'pix',
     status: 'pago',
     dataPagamento: hoje,
@@ -219,10 +222,11 @@ function LancamentoForm({ lancamento, tipoInicial, onClose }: LancamentoFormProp
   const criar = useCriarLancamento();
   const atualizar = useAtualizarLancamento(lancamento?.id ?? '');
   const salvando = criar.isPending || atualizar.isPending;
+  const contaPadrao = useContaBancariaPadrao();
 
   const form = useForm<LancamentoFormInput, unknown, LancamentoFormValores>({
     resolver: zodResolver(lancamentoFormSchema),
-    defaultValues: valoresIniciais(lancamento, tipoInicial, hojeSP()),
+    defaultValues: valoresIniciais(lancamento, tipoInicial, hojeSP(), contaPadrao),
   });
 
   const [tipo, status, repetir, data, itens] = useWatch({

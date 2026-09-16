@@ -8,6 +8,7 @@ import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import {
+  FormCombobox,
   FormDateInput,
   FormMoneyInput,
   FormRootError,
@@ -15,6 +16,7 @@ import {
   FormTextarea,
 } from '@/components/ui/form-field';
 import { ResponsiveDialog } from '@/components/ui/responsive-dialog';
+import { useContaBancariaPadrao, useContasBancariasOpcoes } from '@/features/referencias';
 import { aplicarErrosDoServidor } from '@/lib/api/errors';
 import { formatData, formatMesExtenso, hojeSP } from '@/lib/format/date';
 import { formatBRL } from '@/lib/format/money';
@@ -35,6 +37,7 @@ const pagamentoSchema = z.object({
       return v;
     }),
   formaPagamento: z.enum(FORMAS_PAGAMENTO, { error: 'Escolha a forma de pagamento' }),
+  contaBancariaId: z.uuid().nullable().optional(),
   observacao: z.string().trim().max(500, 'Máximo de 500 caracteres').optional(),
 });
 
@@ -50,12 +53,15 @@ export interface PagamentoDasDialogProps {
 
 export function PagamentoDasDialog({ competencia, onOpenChange }: PagamentoDasDialogProps) {
   const registrar = useRegistrarPagamentoDas();
+  const contasBancarias = useContasBancariasOpcoes();
+  const contaPadrao = useContaBancariaPadrao();
   const form = useForm<PagamentoForm, unknown, PagamentoValores>({
     resolver: zodResolver(pagamentoSchema),
     defaultValues: {
       dataPagamento: hojeSP(),
       valorPago: null,
       formaPagamento: 'pix',
+      contaBancariaId: contaPadrao,
       observacao: '',
     },
   });
@@ -66,10 +72,11 @@ export function PagamentoDasDialog({ competencia, onOpenChange }: PagamentoDasDi
         dataPagamento: hojeSP(),
         valorPago: competencia.valor,
         formaPagamento: 'pix',
+        contaBancariaId: contaPadrao,
         observacao: '',
       });
     }
-  }, [competencia, form]);
+  }, [competencia, form, contaPadrao]);
 
   const onSubmit = (valores: PagamentoValores) => {
     if (!competencia) return;
@@ -80,6 +87,7 @@ export function PagamentoDasDialog({ competencia, onOpenChange }: PagamentoDasDi
           dataPagamento: valores.dataPagamento,
           valorPago: valores.valorPago,
           formaPagamento: valores.formaPagamento,
+          contaBancariaId: valores.contaBancariaId ?? null,
           observacao: valores.observacao || null,
         },
       },
@@ -143,12 +151,24 @@ export function PagamentoDasDialog({ competencia, onOpenChange }: PagamentoDasDi
               : 'Normalmente é o valor calculado. Ajuste se a guia veio diferente.'
           }
         />
-        <FormSelect
-          control={form.control}
-          name="formaPagamento"
-          label="Forma de pagamento"
-          options={OPCOES_FORMA}
-        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormSelect
+            control={form.control}
+            name="formaPagamento"
+            label="Forma de pagamento"
+            options={OPCOES_FORMA}
+          />
+          <FormCombobox
+            control={form.control}
+            name="contaBancariaId"
+            label="Conta de onde o dinheiro saiu"
+            opcional
+            options={contasBancarias.opcoes}
+            loading={contasBancarias.isPending}
+            placeholder="Selecione…"
+            clearable
+          />
+        </div>
         <FormTextarea
           control={form.control}
           name="observacao"

@@ -7,6 +7,7 @@ import { useMemo } from 'react';
 
 import type { ComboboxOption } from '@/components/ui/combobox';
 import { useMe } from '@/features/auth/hooks';
+import { useConfiguracoes } from '@/features/configuracoes/hooks';
 import { formatDocumento } from '@/lib/format/documento';
 
 import { formatBRL } from '@/lib/format/money';
@@ -124,4 +125,14 @@ export function useDasParametros(ano: number) {
 /** Usuário + MEI (tenant) atuais — GET /auth/me. */
 export function useMei() {
   return useMe();
+}
+
+/**
+ * Conta bancária sugerida em Configurações, para pré-preencher os formulários de dinheiro.
+ * É só um valor inicial de tela: a API nunca aplica esse padrão sozinha, senão um lançamento
+ * salvo sem conta passaria a mexer em saldo sem o dono ter escolhido.
+ */
+export function useContaBancariaPadrao(): string | null {
+  const { data } = useConfiguracoes();
+  return data?.contaBancariaPadraoId ?? null;
 }

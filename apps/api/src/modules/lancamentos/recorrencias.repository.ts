@@ -4,15 +4,17 @@ import type { TipoLancamento } from '@meifin/shared';
 import { and, asc, eq, sql } from 'drizzle-orm';
 
 import { categorias } from '../../db/schema/categorias.js';
+import { contasBancarias } from '../../db/schema/contas-bancarias.js';
 import { contatos } from '../../db/schema/contatos.js';
 import { lancamentos, recorrencias, type RecorrenciaRow } from '../../db/schema/lancamentos.js';
 import type { TenantDb } from '../../lib/tenant-db.js';
-import type { CategoriaRefRow, ContatoRefRow } from './repository.js';
+import type { CategoriaRefRow, ContaBancariaRefRow, ContatoRefRow } from './repository.js';
 
 export interface RecorrenciaComRefs {
   recorrencia: RecorrenciaRow;
   categoria: CategoriaRefRow | null;
   contato: ContatoRefRow | null;
+  contaBancaria: ContaBancariaRefRow | null;
 }
 
 export interface FiltroRecorrencias {
@@ -29,6 +31,7 @@ type LinhaBruta = {
     icone: string | null;
   } | null;
   contato: { id: string | null; nome: string | null; tipo: string | null } | null;
+  contaBancaria: { id: string | null; nome: string | null; tipo: string | null } | null;
 };
 
 function normalizar(linha: LinhaBruta): RecorrenciaComRefs {
@@ -45,7 +48,15 @@ function normalizar(linha: LinhaBruta): RecorrenciaComRefs {
     linha.contato && linha.contato.id && linha.contato.nome !== null
       ? { id: linha.contato.id, nome: linha.contato.nome, tipo: linha.contato.tipo ?? '' }
       : null;
-  return { recorrencia: linha.recorrencia, categoria, contato };
+  const contaBancaria =
+    linha.contaBancaria && linha.contaBancaria.id && linha.contaBancaria.nome !== null
+      ? {
+          id: linha.contaBancaria.id,
+          nome: linha.contaBancaria.nome,
+          tipo: linha.contaBancaria.tipo ?? '',
+        }
+      : null;
+  return { recorrencia: linha.recorrencia, categoria, contato, contaBancaria };
 }
 
 function consultaComRefs(tdb: TenantDb) {
@@ -59,6 +70,11 @@ function consultaComRefs(tdb: TenantDb) {
         icone: categorias.icone,
       },
       contato: { id: contatos.id, nome: contatos.nome, tipo: contatos.tipo },
+      contaBancaria: {
+        id: contasBancarias.id,
+        nome: contasBancarias.nome,
+        tipo: contasBancarias.tipo,
+      },
     })
     .from(recorrencias)
     .leftJoin(
@@ -71,6 +87,13 @@ function consultaComRefs(tdb: TenantDb) {
     .leftJoin(
       contatos,
       and(eq(contatos.tenantId, recorrencias.tenantId), eq(contatos.id, recorrencias.contatoId)),
+    )
+    .leftJoin(
+      contasBancarias,
+      and(
+        eq(contasBancarias.tenantId, recorrencias.tenantId),
+        eq(contasBancarias.id, recorrencias.contaBancariaId),
+      ),
     );
 }
 
@@ -159,6 +182,7 @@ export async function materializar(
         descricao: rec.descricao,
         categoriaId: rec.categoriaId,
         contatoId: rec.contatoId,
+        contaBancariaId: rec.contaBancariaId,
         formaPagamento: rec.formaPagamento,
         status: 'pendente' as const,
         dataPagamento: null,

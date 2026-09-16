@@ -38,6 +38,8 @@ export function toRecorrenciaDto(r: repo.RecorrenciaComRefs): RecorrenciaDto {
     categoria: r.categoria,
     contatoId: rec.contatoId,
     contato: r.contato,
+    contaBancariaId: rec.contaBancariaId,
+    contaBancaria: r.contaBancaria,
     formaPagamento: rec.formaPagamento,
     diaDoMes: rec.diaDoMes,
     dataInicio: rec.dataInicio,
@@ -55,6 +57,7 @@ export async function validarReferencias(
   tipo: RecorrenciaRow['tipo'],
   categoriaId: string,
   contatoId: string | null | undefined,
+  contaBancariaId?: string | null | undefined,
 ): Promise<void> {
   const categoria = await repoLanc.buscarCategoria(tdb, categoriaId);
   if (!categoria) throw new NotFoundError('Categoria não encontrada');
@@ -67,6 +70,10 @@ export async function validarReferencias(
   if (contatoId) {
     const contato = await repoLanc.buscarContato(tdb, contatoId);
     if (!contato) throw new NotFoundError('Contato não encontrado');
+  }
+  if (contaBancariaId) {
+    const conta = await repoLanc.buscarContaBancaria(tdb, contaBancariaId);
+    if (!conta) throw new NotFoundError('Conta bancária não encontrada');
   }
 }
 
@@ -94,13 +101,14 @@ export async function criar(
   hoje: IsoDate,
   body: CriarRecorrenciaBody,
 ): Promise<RecorrenciaDto> {
-  await validarReferencias(tdb, body.tipo, body.categoriaId, body.contatoId);
+  await validarReferencias(tdb, body.tipo, body.categoriaId, body.contatoId, body.contaBancariaId);
   const criada = await repo.criar(tdb, {
     tipo: body.tipo,
     valor: body.valor,
     descricao: body.descricao,
     categoriaId: body.categoriaId,
     contatoId: body.contatoId ?? null,
+    contaBancariaId: body.contaBancariaId ?? null,
     formaPagamento: body.formaPagamento ?? 'pix',
     diaDoMes: body.diaDoMes,
     dataInicio: body.dataInicio,
@@ -122,8 +130,15 @@ export async function atualizar(
   const tipo = body.tipo ?? atual.tipo;
   const categoriaId = body.categoriaId ?? atual.categoriaId;
   const contatoId = body.contatoId !== undefined ? body.contatoId : atual.contatoId;
-  if (body.tipo !== undefined || body.categoriaId !== undefined || body.contatoId) {
-    await validarReferencias(tdb, tipo, categoriaId, contatoId);
+  const contaBancariaId =
+    body.contaBancariaId !== undefined ? body.contaBancariaId : atual.contaBancariaId;
+  if (
+    body.tipo !== undefined ||
+    body.categoriaId !== undefined ||
+    body.contatoId ||
+    body.contaBancariaId
+  ) {
+    await validarReferencias(tdb, tipo, categoriaId, contatoId, contaBancariaId);
   }
   const dataInicio = body.dataInicio ?? atual.dataInicio;
   const dataFim = body.dataFim !== undefined ? body.dataFim : atual.dataFim;
@@ -137,6 +152,7 @@ export async function atualizar(
     tipo,
     categoriaId,
     contatoId,
+    contaBancariaId,
     ...(body.valor !== undefined ? { valor: body.valor } : {}),
     ...(body.descricao !== undefined ? { descricao: body.descricao } : {}),
     ...(body.formaPagamento !== undefined ? { formaPagamento: body.formaPagamento ?? 'pix' } : {}),

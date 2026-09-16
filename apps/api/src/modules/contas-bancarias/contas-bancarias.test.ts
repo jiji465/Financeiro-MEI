@@ -359,6 +359,135 @@ describe('contas bancárias', () => {
     });
   });
 
+  // Regressão: o saldo por conta nasceu lendo só `lancamentos.conta_bancaria_id`, mas os módulos
+  // que criam lançamento por conta própria (baixa de parcela, pagamento do DAS, receita de nota)
+  // não gravavam a conta — então quitar uma conta a pagar ou pagar o DAS não mexia em saldo nenhum.
+  describe('saldo a partir das outras origens de dinheiro', () => {
+    it('a baixa de uma parcela debita a conta escolhida', async () => {
+      const conta = await criarConta({ nome: 'Conta da baixa', saldoInicial: 100_000 });
+      const titulo = (
+        await injectComo(ctx.app, s, {
+          method: 'POST',
+          url: '/api/v1/titulos',
+          payload: {
+            tipo: 'pagar',
+            descricao: 'Fornecedor da baixa',
+            categoriaId: categoriaDespesa,
+            valorTotal: 30_000,
+            dataEmissao: '2026-06-01',
+            parcelas: { quantidade: 1, primeiroVencimento: '2026-06-10' },
+          },
+        })
+      ).json<{ data: { parcelas: { id: string }[] } }>().data;
+
+      const baixa = await injectComo(ctx.app, s, {
+        method: 'POST',
+        url: `/api/v1/parcelas/${titulo.parcelas[0]!.id}/baixa`,
+        payload: { contaBancariaId: conta.id },
+      });
+      expect(baixa.statusCode).toBe(201);
+      expect(
+        baixa.json<{ data: { lancamento: { contaBancaria: { nome: string } | null } } }>().data
+          .lancamento.contaBancaria,
+      ).toEqual({ id: conta.id, nome: 'Conta da baixa', tipo: 'corrente' });
+
+      const depois = await obterConta(conta.id);
+      expect(depois.despesas).toBe(30_000);
+      expect(depois.saldo).toBe(70_000);
+    });
+
+    it('o pagamento do DAS debita a conta escolhida', async () => {
+      const conta = await criarConta({ nome: 'Conta do DAS', saldoInicial: 50_000 });
+      const pagamento = await injectComo(ctx.app, s, {
+        method: 'POST',
+        url: '/api/v1/obrigacoes/das/2026-05/pagamento',
+        payload: { contaBancariaId: conta.id },
+      });
+      expect(pagamento.statusCode).toBe(201);
+      const valorPago = pagamento.json<{ data: { lancamento: { valor: number } } }>().data
+        .lancamento.valor;
+
+      const depois = await obterConta(conta.id);
+      expect(depois.despesas).toBe(valorPago);
+      expect(depois.saldo).toBe(50_000 - valorPago);
+    });
+
+    it('a receita gerada pela nota fiscal credita a conta escolhida', async () => {
+      const conta = await criarConta({ nome: 'Conta da nota', saldoInicial: 0 });
+      const res = await injectComo(ctx.app, s, {
+        method: 'POST',
+        url: '/api/v1/notas-fiscais',
+        payload: {
+          tipo: 'nfse',
+          numero: '9001',
+          dataEmissao: '2026-06-02',
+          valor: 80_000,
+          gerarReceita: true,
+          categoriaId: categoriaReceita,
+          contaBancariaId: conta.id,
+        },
+      });
+      expect(res.statusCode).toBe(201);
+
+      const depois = await obterConta(conta.id);
+      expect(depois.receitas).toBe(80_000);
+      expect(depois.saldo).toBe(80_000);
+    });
+
+    it('conta bancária de outro MEI na baixa → 404', async () => {
+      const outro = await signupTenant(ctx.app, { email: 'outro-baixa@meifin.com.br' });
+      const contaAlheia = (
+        await injectComo(ctx.app, outro, {
+          method: 'POST',
+          url: URL,
+          payload: { nome: 'Conta do vizinho' },
+        })
+      ).json<{ data: Conta }>().data;
+
+      const titulo = (
+        await injectComo(ctx.app, s, {
+          method: 'POST',
+          url: '/api/v1/titulos',
+          payload: {
+            tipo: 'pagar',
+            descricao: 'Fornecedor do vizinho',
+            categoriaId: categoriaDespesa,
+            valorTotal: 5_000,
+            dataEmissao: '2026-06-01',
+            parcelas: { quantidade: 1, primeiroVencimento: '2026-06-20' },
+          },
+        })
+      ).json<{ data: { parcelas: { id: string }[] } }>().data;
+
+      const res = await injectComo(ctx.app, s, {
+        method: 'POST',
+        url: `/api/v1/parcelas/${titulo.parcelas[0]!.id}/baixa`,
+        payload: { contaBancariaId: contaAlheia.id },
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('nota fiscal com conta bancária mas sem gerar receita → 400 no campo', async () => {
+      const conta = await criarConta({ nome: 'Conta sem receita' });
+      const res = await injectComo(ctx.app, s, {
+        method: 'POST',
+        url: '/api/v1/notas-fiscais',
+        payload: {
+          tipo: 'nfse',
+          numero: '9002',
+          dataEmissao: '2026-06-03',
+          valor: 1_000,
+          gerarReceita: false,
+          contaBancariaId: conta.id,
+        },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json<{ error: { details: { campo: string }[] } }>().error.details[0]!.campo).toBe(
+        'contaBancariaId',
+      );
+    });
+  });
+
   describe('atualização e exclusão', () => {
     it('PATCH renomeia, troca tipo e desativa', async () => {
       const conta = await criarConta({ nome: 'Conta a editar', tipo: 'corrente' });
