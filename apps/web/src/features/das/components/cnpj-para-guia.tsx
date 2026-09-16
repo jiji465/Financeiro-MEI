@@ -2,12 +2,17 @@
 // campo por link: é um formulário de terceiro, sem endereço documentado que aceite o CNPJ como
 // parâmetro — inventar um significaria um link que quebra sem avisar. O que dá pra fazer, e
 // resolve o incômodo real, é deixar o CNPJ a um clique de distância pra colar lá.
+//
+// O botão "Gerar guia" de cada mês já copia o CNPJ sozinho ao abrir o PGMEI (botao-gerar-guia.tsx);
+// este bloco é o mesmo recurso para quem quer só o número à mão, sem sair da tela.
 import { Check, Copy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { useMei } from '@/features/referencias';
 import { maskCNPJ } from '@/lib/format/documento';
+
+import { BotaoGerarGuia } from './botao-gerar-guia';
 
 export function CnpjParaGuia() {
   const mei = useMei();
@@ -42,6 +47,7 @@ export function CnpjParaGuia() {
         {copiado ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
         {copiado ? 'Copiado' : 'Copiar'}
       </Button>
+      <BotaoGerarGuia variant="outline">Abrir o PGMEI com o CNPJ copiado</BotaoGerarGuia>
     </div>
   );
 }

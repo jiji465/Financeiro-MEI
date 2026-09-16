@@ -1,7 +1,7 @@
 // Tabela (desktop) / cartões (mobile) das 12 competências do DAS de um ano, com ações:
 // marcar como pago, desfazer (com confirmação) e link para gerar a guia no PGMEI.
 import { type DasAnoDto, type DasCompetenciaDto, detalhamentoDas } from '@meifin/shared';
-import { CircleHelp, ExternalLink, Undo2 } from 'lucide-react';
+import { CircleHelp, Undo2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -14,11 +14,12 @@ import { formatBRL } from '@/lib/format/money';
 import { capitalizar, plural } from '@/lib/format/texto';
 
 import { useDesfazerPagamentoDas } from '../hooks';
+import { BotaoGerarGuia } from './botao-gerar-guia';
 import { DasStatusBadge } from './das-status-badge';
 import { PagamentoDasDialog } from './pagamento-das-dialog';
 
-export const URL_PGMEI =
-  'https://www8.receita.fazenda.gov.br/SimplesNacional/Aplicacoes/ATSPO/pgmei.app/Identificacao';
+// Reexportado de botao-gerar-guia.ts para não quebrar quem já importava daqui.
+export { URL_PGMEI } from './botao-gerar-guia';
 
 function ValorComDetalhamento({ competencia }: { competencia: DasCompetenciaDto }) {
   const linhas = detalhamentoDas(competencia.detalhamento);
@@ -157,12 +158,7 @@ export function DasTabela({ das }: { das: DasAnoDto }) {
       // No cartão mobile as ações ficam ao lado do conteúdo num espaço estreito: empilha por
       // padrão e só vira linha a partir de md (onde as ações caem na última coluna da tabela).
       <div className="flex flex-col items-stretch gap-1 md:flex-row md:items-center md:justify-end">
-        <Button variant="ghost" size="sm" asChild>
-          <a href={URL_PGMEI} target="_blank" rel="noopener noreferrer">
-            Gerar guia
-            <ExternalLink aria-hidden="true" />
-          </a>
-        </Button>
+        <BotaoGerarGuia />
         <Button
           size="sm"
           variant={c.status === 'atrasado' ? 'primary' : 'secondary'}

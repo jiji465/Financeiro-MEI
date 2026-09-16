@@ -32,6 +32,15 @@ export function useLimite(ano: number) {
   });
 }
 
+/** Eventos do período (DAS, DASN, parcelas, lançamentos pendentes, feriados). */
+export function useCalendario(de: string, ate: string) {
+  return useQuery({
+    queryKey: obrigacoesKeys.calendario(de, ate),
+    queryFn: () => obrigacoesApi.calendario(de, ate),
+    select: (res) => res.data,
+  });
+}
+
 export function useAlertas() {
   return useQuery({
     queryKey: obrigacoesKeys.alertas(),

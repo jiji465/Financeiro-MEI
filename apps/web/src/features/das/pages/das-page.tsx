@@ -9,6 +9,7 @@ import { hojeSP } from '@/lib/format/date';
 import { useSearchParamsState } from '@/lib/hooks';
 
 import { AlertasList } from '../components/alertas-list';
+import { CalendarioAnual } from '../components/calendario-anual';
 import { CnpjParaGuia } from '../components/cnpj-para-guia';
 import { SeletorAno } from '../components/das-status-badge';
 import { DasTabela, ResumoDas } from '../components/das-tabela';
@@ -79,20 +80,22 @@ export function DasPage() {
           <TabsList>
             <TabsTrigger value="mensal">DAS mensal</TabsTrigger>
             <TabsTrigger value="dasn">DASN-SIMEI</TabsTrigger>
+            <TabsTrigger value="calendario">Calendário</TabsTrigger>
           </TabsList>
-          {(aba || 'mensal') === 'mensal' ? (
-            <SeletorAno
-              ano={ano}
-              onChange={(v) => setAnoTexto(String(v))}
-              desde={ANO_ATUAL - 5}
-              ate={ANO_ATUAL}
-            />
-          ) : (
+          {(aba || 'mensal') === 'dasn' ? (
             <SeletorAno
               ano={anoBase}
               onChange={(v) => setAnoBaseTexto(String(v))}
               desde={ANO_ATUAL - 6}
               ate={ANO_ATUAL - 1}
+            />
+          ) : (
+            // Mensal e calendário compartilham o mesmo ano: trocar numa aba mantém na outra.
+            <SeletorAno
+              ano={ano}
+              onChange={(v) => setAnoTexto(String(v))}
+              desde={ANO_ATUAL - 5}
+              ate={ANO_ATUAL + 1}
             />
           )}
         </div>
@@ -102,6 +105,9 @@ export function DasPage() {
         </TabsContent>
         <TabsContent value="dasn">
           <DasnPainel anoBase={anoBase} />
+        </TabsContent>
+        <TabsContent value="calendario">
+          <CalendarioAnual ano={ano} />
         </TabsContent>
       </Tabs>
     </div>
