@@ -206,8 +206,10 @@ export function ItensCampo<T extends FieldValues>({
             disabled={disabled}
           />
           <div className="flex items-center justify-end gap-2">
+            {/* whitespace-nowrap: sem ele "R$ 0,00" quebra em duas linhas ao lado da lixeira
+                no celular, porque o flex encolhe o span antes de encolher o botão. */}
             <span
-              className="text-sm text-zinc-600 tabular-nums sm:hidden"
+              className="text-sm whitespace-nowrap text-zinc-600 tabular-nums sm:hidden"
               aria-label={`Total do item ${i + 1}`}
             >
               {formatBRL(totalDaLinha(itens[i]))}

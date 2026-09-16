@@ -1,11 +1,10 @@
 // Router (React Router 7, data mode).
 // - Páginas públicas (feature auth) dentro de AuthLayout + RedirectIfAuth.
 // - Todas as outras features dentro de RequireAuth + AppShell, montadas a partir do registry.
-// - "/" usa o placeholder de app/ até a feature dashboard registrar uma rota index.
+// - "/" é a "Visão geral" (features/dashboard registra a rota index).
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, type RouteObject } from 'react-router';
 
-import { InicioPlaceholder } from '@/app/inicio-placeholder';
 import { NaoEncontrada } from '@/app/nao-encontrada';
 import { modules } from '@/app/registry';
 import { RotaErro } from '@/app/rota-erro';
@@ -26,8 +25,6 @@ const rotasPublicas: RouteObject[] = modules
   .filter((m) => m.id === 'auth')
   .flatMap((m) => m.routes);
 const rotasApp: RouteObject[] = modules.filter((m) => m.id !== 'auth').flatMap((m) => m.routes);
-
-const temInicio = rotasApp.some((r) => r.index === true || r.path === '/' || r.path === '');
 
 export function criarRotas(): RouteObject[] {
   return [
@@ -52,13 +49,7 @@ export function criarRotas(): RouteObject[] {
       ),
       errorElement: <RotaErro />,
       hydrateFallbackElement: <PageSkeleton />,
-      children: [
-        ...(temInicio
-          ? []
-          : [{ index: true, element: <InicioPlaceholder /> } satisfies RouteObject]),
-        ...rotasApp,
-        { path: '*', element: <NaoEncontrada /> },
-      ],
+      children: [...rotasApp, { path: '*', element: <NaoEncontrada /> }],
     },
   ];
 }

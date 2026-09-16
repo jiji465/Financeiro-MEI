@@ -1,7 +1,10 @@
 // Navegação derivada do registry (src/app/registry.ts). Cada feature declara seus NavItem;
 // aqui apenas ordenamos, agrupamos e escolhemos os 4 atalhos da barra inferior.
-import { ArrowLeftRight, House, Landmark, Wallet } from 'lucide-react';
-
+//
+// Não há mais item sintético nem lista de reserva: "Visão geral" é declarada por
+// features/dashboard como qualquer outra, e as quatro features do rodapé já marcam `mobile: true`.
+// A lista de reserva que existia aqui repetia rotas ("/contas/pagar") e viraria uma armadilha
+// silenciosa se alguma feature mudasse a sua.
 import { navItems, type NavItem } from '@/app/registry';
 
 export interface NavGrupo {
@@ -9,23 +12,6 @@ export interface NavGrupo {
   label?: string;
   itens: NavItem[];
 }
-
-const INICIO: NavItem = {
-  id: 'inicio',
-  label: 'Início',
-  to: '/',
-  icon: House,
-  ordem: 0,
-  mobile: true,
-};
-
-/** Itens padrão da barra inferior enquanto as features não registram `mobile: true`. */
-export const BOTTOM_NAV_PADRAO: readonly NavItem[] = [
-  INICIO,
-  { id: 'lancamentos', label: 'Lançamentos', to: '/lancamentos', icon: ArrowLeftRight, ordem: 10 },
-  { id: 'contas', label: 'Contas', to: '/contas/pagar', icon: Wallet, ordem: 20 },
-  { id: 'das', label: 'DAS', to: '/das', icon: Landmark, ordem: 40 },
-];
 
 /** Filtra a navegação pelo tipo de conta: um administrador puro (tenant interno, sem MEI de
  * verdade — seção 13 do plano) só vê os itens `somenteAdmin`; qualquer outra conta (inclusive um
@@ -48,10 +34,9 @@ function ordenar(itens: readonly NavItem[]): NavItem[] {
   return [...itens].sort((a, b) => (a.ordem ?? 100) - (b.ordem ?? 100));
 }
 
-/** Itens da sidebar: registry + "Início" quando nenhuma feature registra a rota "/". */
+/** Itens da sidebar: o registry inteiro, por ordem. */
 export function itensSidebar(itens: readonly NavItem[] = navItems): NavItem[] {
-  const temInicio = itens.some((i) => i.to === '/');
-  return ordenar(temInicio ? itens : [INICIO, ...itens]);
+  return ordenar(itens);
 }
 
 /** Agrupa por `grupo` (quando presente) preservando a ordem. Itens sem grupo ficam no grupo "". */
@@ -69,32 +54,14 @@ export function agruparNav(itens: readonly NavItem[] = itensSidebar()): NavGrupo
   return [...grupos.values()];
 }
 
-/** Os 4 atalhos da barra inferior: itens com `mobile: true` (por ordem), completados pelo padrão
- * enquanto as features não registram `mobile: true`. `semPadrao` desliga esse complemento — usado
- * para um administrador puro (seção 13 do plano), que só tem "Administração" (mobile: false) e
- * não deveria ganhar de volta os atalhos de MEI que o filtro de navegação escondeu. */
-export function bottomNavSlots(
-  itens: readonly NavItem[] = navItems,
-  { semPadrao = false }: { semPadrao?: boolean } = {},
-): NavItem[] {
-  const marcados = ordenar(itens.filter((i) => i.mobile)).slice(0, 4);
-  if (!marcados.some((i) => i.to === '/')) marcados.unshift(INICIO);
-  const slots = marcados.slice(0, 4);
-  if (!semPadrao) {
-    for (const padrao of BOTTOM_NAV_PADRAO) {
-      if (slots.length >= 4) break;
-      if (!slots.some((s) => s.to === padrao.to)) slots.push(padrao);
-    }
-  }
-  return ordenar(slots);
+/** Os 4 atalhos da barra inferior: os itens com `mobile: true`, por ordem. */
+export function bottomNavSlots(itens: readonly NavItem[] = navItems): NavItem[] {
+  return ordenar(itens.filter((i) => i.mobile)).slice(0, 4);
 }
 
 /** Itens que não cabem na barra inferior (vão para a folha "Mais"). */
-export function itensMais(
-  itens: readonly NavItem[] = navItems,
-  opcoes: { semPadrao?: boolean } = {},
-): NavItem[] {
-  const slots = bottomNavSlots(itens, opcoes);
+export function itensMais(itens: readonly NavItem[] = navItems): NavItem[] {
+  const slots = bottomNavSlots(itens);
   return itensSidebar(itens).filter((i) => !slots.some((s) => s.to === i.to));
 }
 

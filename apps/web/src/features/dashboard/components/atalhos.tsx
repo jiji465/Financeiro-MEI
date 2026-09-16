@@ -1,5 +1,5 @@
 // Atalhos para as ações mais comuns do dia a dia.
-import { FileText, Landmark, Plus, ReceiptText } from 'lucide-react';
+import { FileText, Landmark, Plus, ReceiptText, UserRound } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { Link } from 'react-router';
 
@@ -14,6 +14,7 @@ const ATALHOS: Atalho[] = [
   { label: 'Nova receita', to: '/lancamentos?novo=receita', icone: Plus, tone: 'receita' },
   { label: 'Nova despesa', to: '/lancamentos?novo=despesa', icone: Plus, tone: 'despesa' },
   { label: 'Nova conta', to: '/contas/receber?novo=1', icone: ReceiptText, tone: 'primary' },
+  { label: 'Novo cliente', to: '/contatos/novo?tipo=cliente', icone: UserRound, tone: 'neutral' },
   { label: 'DAS do mês', to: '/das', icone: Landmark, tone: 'neutral' },
   { label: 'Nova nota fiscal', to: '/notas-fiscais?novo=1', icone: FileText, tone: 'neutral' },
 ];

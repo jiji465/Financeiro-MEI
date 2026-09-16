@@ -7,7 +7,7 @@ import {
   type StatusParcela,
   type TipoTitulo,
 } from '@meifin/shared';
-import { Clock, Plus, Search, Wallet } from 'lucide-react';
+import { CalendarRange, Clock, Plus, Search, Wallet } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -18,6 +18,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/ui/page-header';
 import { Pagination } from '@/components/ui/pagination';
+import { PeriodoSelect, type PeriodoValue } from '@/components/ui/periodo-select';
 import { QueryState } from '@/components/ui/query-state';
 import { SimpleSelect } from '@/components/ui/select';
 import { SkeletonText } from '@/components/ui/skeleton';
@@ -25,7 +26,7 @@ import { StatCard } from '@/components/ui/stat-card';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useContatosOpcoes } from '@/features/referencias';
-import { formatData } from '@/lib/format/date';
+import { formatData, hojeSP, periodoPreset, presetDoPeriodo } from '@/lib/format/date';
 import { formatBRL } from '@/lib/format/money';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { useSearchParamsObject } from '@/lib/hooks/use-search-params-state';
@@ -40,7 +41,18 @@ import { agruparPorVencimento, TEXTOS_POR_TIPO } from '../utils';
 
 const PAGE_SIZE = 100;
 const STATUS_OPCOES = opcoesDe(STATUS_PARCELA, STATUS_PARCELA_LABELS);
-const CHAVES = ['status', 'contatoId', 'atrasadas', 'q', 'page', 'novo', 'conta', 'pagar'] as const;
+const CHAVES = [
+  'de',
+  'ate',
+  'status',
+  'contatoId',
+  'atrasadas',
+  'q',
+  'page',
+  'novo',
+  'conta',
+  'pagar',
+] as const;
 
 function LinhaParcela({
   item,
@@ -113,12 +125,29 @@ function ListaContas({ tipo }: { tipo: TipoTitulo }) {
   const resumo = useResumoParcelas(30);
   const resumoTipo = resumo.data?.[tipo];
 
+  // Período de VENCIMENTO, não de emissão: aqui a pergunta é "o que vence quando". Sem nada na
+  // URL o filtro fica desligado — a tela nasceu mostrando tudo em aberto, inclusive o que venceu
+  // meses atrás, e limitar isso por padrão esconderia atraso antigo.
+  const periodo: PeriodoValue | null =
+    params.de || params.ate
+      ? {
+          de: params.de || params.ate,
+          ate: params.ate || params.de,
+          preset: presetDoPeriodo(
+            { de: params.de || params.ate, ate: params.ate || params.de },
+            hojeSP(),
+          ),
+        }
+      : null;
+
   const query = useParcelas({
     tipo,
     status: (params.status || undefined) as StatusParcela | undefined,
     contatoId: params.contatoId || undefined,
     atrasadas: params.atrasadas === '1' ? true : undefined,
     busca: params.q || undefined,
+    vencimentoDe: params.de || undefined,
+    vencimentoAte: params.ate || undefined,
     page,
     pageSize: PAGE_SIZE,
   });
@@ -241,6 +270,44 @@ function ListaContas({ tipo }: { tipo: TipoTitulo }) {
             checked={params.atrasadas === '1'}
             onCheckedChange={(v) => patch({ atrasadas: v ? '1' : '', page: '' })}
           />
+        </div>
+
+        {/* O filtro de vencimento nasce DESLIGADO de propósito: a tela precisa mostrar o que
+            venceu meses atrás, e um período padrão esconderia atraso antigo. Enquanto está
+            desligado mostramos só o botão — um seletor de período sempre visível diria
+            "Personalizado" sem nenhum filtro aplicado, o que seria mentira. */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          {periodo ? (
+            <>
+              <PeriodoSelect
+                value={periodo}
+                onChange={(v) => patch({ de: v.de, ate: v.ate, page: '' })}
+                aria-label="Vencimento entre"
+                className="min-w-0"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => patch({ de: '', ate: '', page: '' })}
+                className="self-start sm:self-auto"
+              >
+                Todos os vencimentos
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              icon={<CalendarRange aria-hidden="true" />}
+              onClick={() => {
+                const p = periodoPreset('este_mes', hojeSP());
+                patch({ de: p.de, ate: p.ate, page: '' });
+              }}
+              className="self-start"
+            >
+              Filtrar por vencimento
+            </Button>
+          )}
         </div>
       </PageHeader>
 

@@ -6,8 +6,10 @@ import { agruparNav, bottomNavSlots, itemDaRota, itensMais, itensSidebar, rotaAt
 
 const itens: NavItem[] = [
   { id: 'relatorios', label: 'Relatórios', to: '/relatorios', ordem: 50 },
+  { id: 'visao-geral', label: 'Visão geral', to: '/', ordem: 0, mobile: true },
   { id: 'lancamentos', label: 'Lançamentos', to: '/lancamentos', ordem: 10, mobile: true },
   { id: 'contatos', label: 'Contatos', to: '/contatos', ordem: 30 },
+  { id: 'contas', label: 'Contas', to: '/contas/pagar', ordem: 20, mobile: true },
   { id: 'das', label: 'DAS', to: '/das', ordem: 40, mobile: true },
   {
     id: 'configuracoes',
@@ -19,17 +21,23 @@ const itens: NavItem[] = [
 ];
 
 describe('navegação derivada do registry', () => {
-  it('sidebar ganha "Início" quando nenhuma feature registra "/"', () => {
+  it('sidebar é o registry ordenado — sem item sintético', () => {
     const lista = itensSidebar(itens);
     expect(lista[0]?.to).toBe('/');
     expect(lista.map((i) => i.id)).toEqual([
-      'inicio',
+      'visao-geral',
       'lancamentos',
+      'contas',
       'contatos',
       'das',
       'relatorios',
       'configuracoes',
     ]);
+  });
+
+  it('sem nenhum item, a navegação fica vazia (nada de lista de reserva)', () => {
+    expect(itensSidebar([])).toEqual([]);
+    expect(bottomNavSlots([])).toEqual([]);
   });
 
   it('respeita o campo grupo quando presente', () => {
@@ -38,15 +46,9 @@ describe('navegação derivada do registry', () => {
     expect(grupos[1]?.itens.map((i) => i.id)).toEqual(['configuracoes']);
   });
 
-  it('barra inferior usa itens mobile e completa com o padrão até 4', () => {
+  it('barra inferior usa os itens mobile, por ordem, no máximo 4', () => {
     const slots = bottomNavSlots(itens);
     expect(slots.map((i) => i.to)).toEqual(['/', '/lancamentos', '/contas/pagar', '/das']);
-    expect(bottomNavSlots([]).map((i) => i.label)).toEqual([
-      'Início',
-      'Lançamentos',
-      'Contas',
-      'DAS',
-    ]);
   });
 
   it('"Mais" recebe o que não coube na barra', () => {

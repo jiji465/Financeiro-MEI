@@ -21,8 +21,10 @@ export function BottomNav() {
   const user = useAuthStore((s) => s.user);
   const interno = useAuthStore((s) => s.tenant?.interno ?? false);
   const itensVisiveis = filtrarNav(navItems, { admin: user?.admin ?? false, interno });
-  const slots = bottomNavSlots(itensVisiveis, { semPadrao: interno });
-  const restantes = itensMais(itensVisiveis, { semPadrao: interno });
+  // `filtrarNav` já reduz um administrador puro (tenant interno) a "Administração", que não é
+  // `mobile` — então ele fica sem atalhos no rodapé, que é o certo: não são telas dele.
+  const slots = bottomNavSlots(itensVisiveis);
+  const restantes = itensMais(itensVisiveis);
   const logout = useLogout();
   const algumRestanteAtivo = restantes.some((i) => rotaAtiva(i.to, pathname));
 

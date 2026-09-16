@@ -1,13 +1,5 @@
-import {
-  ChevronDown,
-  LogOut,
-  Package,
-  Plus,
-  Settings,
-  TrendingDown,
-  TrendingUp,
-  Wrench,
-} from 'lucide-react';
+import { ChevronDown, LogOut, Plus, Settings } from 'lucide-react';
+import { Fragment } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 
 import { navItems } from '@/app/registry';
@@ -24,8 +16,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
+import { GRUPOS_NOVO } from './acoes-novo';
 import { BrandMark } from './brand';
 import { itemDaRota } from './nav';
+
+const TONE_ICONE: Record<string, string> = {
+  receita: 'text-receita-600!',
+  despesa: 'text-despesa-600!',
+};
 
 /**
  * Barra superior: título da área (desktop), o menu "Novo" e o menu do usuário.
@@ -67,26 +65,22 @@ export function Topbar() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => navigate('/lancamentos?novo=receita')}>
-                <TrendingUp className="text-receita-600!" />
-                Nova receita
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => navigate('/lancamentos?novo=despesa')}>
-                <TrendingDown className="text-despesa-600!" />
-                Nova despesa
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-xs font-normal text-zinc-500">
-                Catálogo
-              </DropdownMenuLabel>
-              <DropdownMenuItem onSelect={() => navigate('/produtos-servicos?novo=produto')}>
-                <Package />
-                Novo produto
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => navigate('/produtos-servicos?novo=servico')}>
-                <Wrench />
-                Novo serviço
-              </DropdownMenuItem>
+              {GRUPOS_NOVO.map((grupo, i) => (
+                <Fragment key={grupo.label ?? 'lancamentos'}>
+                  {i > 0 ? <DropdownMenuSeparator /> : null}
+                  {grupo.label ? (
+                    <DropdownMenuLabel className="text-xs font-normal text-zinc-500">
+                      {grupo.label}
+                    </DropdownMenuLabel>
+                  ) : null}
+                  {grupo.acoes.map((acao) => (
+                    <DropdownMenuItem key={acao.id} onSelect={() => navigate(acao.to)}>
+                      <acao.icone className={acao.tone ? TONE_ICONE[acao.tone] : undefined} />
+                      {acao.label}
+                    </DropdownMenuItem>
+                  ))}
+                </Fragment>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
