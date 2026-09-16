@@ -16,6 +16,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 
+import { PDF_CONTENT_TYPE } from '../../lib/pdf.js';
 import { exigirArquivo, lerMultipart } from './multipart.js';
 import * as service from './service.js';
 import type { LancamentosCtx } from './service.js';
@@ -196,6 +197,27 @@ export const lancamentosRoutes: FastifyPluginAsyncZod = async (app) => {
         .header('content-disposition', contentDisposition(anexo.nome))
         .header('cache-control', 'private, max-age=0')
         .send(anexo.conteudo);
+    },
+  );
+
+  app.get(
+    `${BASE}/:id/recibo`,
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Recibo em PDF da receita recebida (422 em despesa ou receita pendente)',
+        params: idParam,
+        produces: ['application/pdf'],
+      },
+    },
+    async (request, reply) => {
+      const pdf = await service.recibo(ctxDe(app, request), request.params.id);
+      return reply
+        .type(PDF_CONTENT_TYPE)
+        .header('content-length', String(pdf.length))
+        .header('content-disposition', contentDisposition(`recibo-${request.params.id}.pdf`))
+        .header('cache-control', 'private, max-age=0')
+        .send(pdf);
     },
   );
 

@@ -3,6 +3,7 @@
 import {
   LABEL_ORIGEM_LANCAMENTO,
   anexoUploadMeta,
+  formatarDocumento,
   inicioMes,
   type AtualizarLancamentoBody,
   type CriarLancamentoBody,
@@ -33,7 +34,11 @@ import {
   itensPorLancamento,
   sincronizarItens,
 } from '../produtos-servicos/index.js';
+// `contextoTenant` mora no módulo dashboard mas é uma leitura genérica de tenant+configurações;
+// relatorios já a reaproveita pelo mesmo motivo (o recibo precisa do emitente e do endereço).
+import { contextoTenant } from '../dashboard/repository.js';
 import { criarLancamentoInterno, excluirLancamentoInterno } from './core.js';
+import { gerarReciboPdf } from './recibo.js';
 import * as recRepo from './recorrencias.repository.js';
 import { gerarRecorrenciasPendentes, validarReferencias } from './recorrencias.service.js';
 import * as repo from './repository.js';
@@ -441,4 +446,61 @@ export async function removerAnexo(ctx: LancamentosCtx, id: string): Promise<voi
     anexoTamanho: null,
   });
   await ctx.storage.remover(atual.anexoPath).catch(() => undefined);
+}
+
+// ---------------------------------------------------------------------------
+// Recibo
+// ---------------------------------------------------------------------------
+
+/** Nº do recibo: curto, estável e derivado do id — não precisa de contador no banco. */
+function numeroRecibo(id: string, data: string): string {
+  return `${data.replace(/-/g, '')}-${id.replace(/-/g, '').slice(0, 6).toUpperCase()}`;
+}
+
+/**
+ * PDF do recibo de uma receita recebida. Recusa despesa e receita pendente (422): recibo é a
+ * declaração de que o dinheiro ENTROU — numa despesa quem emite é a outra parte, e enquanto
+ * está pendente não há o que declarar.
+ */
+export async function recibo(ctx: LancamentosCtx, id: string): Promise<Buffer> {
+  const tdb = tdbDe(ctx);
+  const linha = await repo.buscarComRefs(tdb, id);
+  if (!linha) throw new NotFoundError('Lançamento não encontrado');
+
+  const l = linha.lancamento;
+  if (l.tipo !== 'receita') {
+    throw new UnprocessableError('Só é possível emitir recibo de uma receita', [
+      { campo: 'tipo', mensagem: 'O recibo comprova dinheiro recebido' },
+    ]);
+  }
+  if (l.status !== 'pago') {
+    throw new UnprocessableError('Só é possível emitir recibo de uma receita já recebida', [
+      { campo: 'status', mensagem: 'Marque como recebida antes de emitir o recibo' },
+    ]);
+  }
+
+  const ctxTenant = await contextoTenant(ctx.exec, ctx.tenantId);
+  const contato = l.contatoId ? await repo.buscarContato(tdb, l.contatoId) : null;
+  const endereco = ctxTenant.tenant.endereco;
+  const local =
+    endereco?.cidade && endereco.uf
+      ? `${endereco.cidade}/${endereco.uf}`
+      : (endereco?.cidade ?? null);
+
+  return gerarReciboPdf({
+    numero: numeroRecibo(l.id, l.dataPagamento ?? l.data),
+    emissor: {
+      nome: ctxTenant.tenant.nome,
+      nomeFantasia: ctxTenant.tenant.nomeFantasia,
+      cnpj: ctxTenant.tenant.cnpj,
+    },
+    local,
+    pagador: contato?.nome ?? null,
+    pagadorDocumento: contato?.documento ? formatarDocumento(contato.documento) : null,
+    valor: l.valor,
+    data: l.dataPagamento ?? l.data,
+    descricao: l.descricao,
+    formaPagamento: l.formaPagamento,
+    observacoes: l.observacoes,
+  });
 }

@@ -27,6 +27,7 @@ export const recursos: RecursoIsolamento[] = [
       'POST /api/v1/lancamentos/:id/anexo',
       'GET /api/v1/lancamentos/:id/anexo',
       'DELETE /api/v1/lancamentos/:id/anexo',
+      'GET /api/v1/lancamentos/:id/recibo',
     ],
     async preparar(app, a) {
       const categoriaId = await categoriaDe(app, a, 'receita');
@@ -72,6 +73,13 @@ export const recursos: RecursoIsolamento[] = [
           method: 'POST',
           url: `/api/v1/lancamentos/${ids.lancamentoId}/pagar`,
           payload: {},
+        }),
+      },
+      {
+        nome: 'GET /lancamentos/:id/recibo de A como B → 404',
+        requisicao: (ids) => ({
+          method: 'GET',
+          url: `/api/v1/lancamentos/${ids.lancamentoId}/recibo`,
         }),
       },
       {

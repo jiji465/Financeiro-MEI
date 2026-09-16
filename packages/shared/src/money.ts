@@ -198,3 +198,137 @@ export function variacaoPercentual(atual: Centavos, anterior: Centavos): number 
   if (anterior === 0) return null;
   return Math.round(((atual - anterior) / Math.abs(anterior)) * 10_000) / 100;
 }
+
+// ---------------------------------------------------------------------------
+// Valor por extenso (recibos)
+// ---------------------------------------------------------------------------
+
+const UNIDADES = [
+  '',
+  'um',
+  'dois',
+  'três',
+  'quatro',
+  'cinco',
+  'seis',
+  'sete',
+  'oito',
+  'nove',
+  'dez',
+  'onze',
+  'doze',
+  'treze',
+  'quatorze',
+  'quinze',
+  'dezesseis',
+  'dezessete',
+  'dezoito',
+  'dezenove',
+] as const;
+
+const DEZENAS = [
+  '',
+  '',
+  'vinte',
+  'trinta',
+  'quarenta',
+  'cinquenta',
+  'sessenta',
+  'setenta',
+  'oitenta',
+  'noventa',
+] as const;
+
+const CENTENAS = [
+  '',
+  'cento',
+  'duzentos',
+  'trezentos',
+  'quatrocentos',
+  'quinhentos',
+  'seiscentos',
+  'setecentos',
+  'oitocentos',
+  'novecentos',
+] as const;
+
+/** Escalas a partir do milhar; o índice é o grupo de 3 dígitos (0 = unidades). */
+const ESCALAS = [
+  ['', ''],
+  ['mil', 'mil'],
+  ['milhão', 'milhões'],
+  ['bilhão', 'bilhões'],
+] as const;
+
+/** 0 < n < 1000 por extenso. "cem" exato vira "cem"; 101+ vira "cento e ...". */
+function grupoPorExtenso(n: number): string {
+  if (n === 100) return 'cem';
+  const partes: string[] = [];
+  const c = Math.floor(n / 100);
+  const resto = n % 100;
+  if (c > 0) partes.push(CENTENAS[c]!);
+  if (resto > 0) {
+    if (resto < 20) partes.push(UNIDADES[resto]!);
+    else {
+      const d = Math.floor(resto / 10);
+      const u = resto % 10;
+      partes.push(u > 0 ? `${DEZENAS[d]!} e ${UNIDADES[u]!}` : DEZENAS[d]!);
+    }
+  }
+  return partes.join(' e ');
+}
+
+/** Inteiro ≥ 0 por extenso, sem unidade monetária. */
+function inteiroPorExtenso(n: number): string {
+  if (n === 0) return 'zero';
+  const grupos: number[] = [];
+  let resto = n;
+  while (resto > 0) {
+    grupos.push(resto % 1000);
+    resto = Math.floor(resto / 1000);
+  }
+
+  const partes: string[] = [];
+  for (let i = grupos.length - 1; i >= 0; i--) {
+    const grupo = grupos[i]!;
+    if (grupo === 0) continue;
+    // "mil" não leva "um" na frente: 1000 é "mil", não "um mil".
+    const texto = i === 1 && grupo === 1 ? '' : grupoPorExtenso(grupo);
+    const [singular, plural] = ESCALAS[i] ?? ESCALAS[0];
+    const escala = i === 0 ? '' : grupo === 1 ? singular : plural;
+    partes.push([texto, escala].filter(Boolean).join(' '));
+  }
+
+  // Separador: "e" antes do último grupo quando ele é menor que 100 ou múltiplo exato de 100
+  // ("mil e quinhentos", "dois mil e cem"); vírgula nos demais ("mil, duzentos e trinta").
+  if (partes.length === 1) return partes[0]!;
+  const ultimo = grupos[0]!;
+  const usaE = ultimo > 0 && (ultimo < 100 || ultimo % 100 === 0);
+  const inicio = partes.slice(0, -1).join(', ');
+  return usaE ? `${inicio} e ${partes.at(-1)}` : `${inicio}, ${partes.at(-1)}`;
+}
+
+/**
+ * Valor em centavos por extenso, para recibos: 123456 → "mil, duzentos e trinta e quatro reais
+ * e cinquenta e seis centavos". Negativo não faz sentido num recibo e é rejeitado.
+ */
+export function valorPorExtenso(centavos: Centavos): string {
+  assertCentavos(centavos);
+  if (centavos < 0) throw new RangeError('valorPorExtenso não aceita valor negativo');
+
+  const reais = Math.floor(centavos / 100);
+  const cents = centavos % 100;
+
+  // "um milhão DE reais", mas "um milhão e cinquenta reais": a preposição só entra quando o
+  // número termina exatamente na escala de milhão/bilhão. Com "mil" nunca entra ("dois mil reais").
+  const de = reais >= 1_000_000 && reais % 1_000_000 === 0 ? 'de ' : '';
+  const parteReais =
+    reais > 0 ? `${inteiroPorExtenso(reais)} ${de}${reais === 1 ? 'real' : 'reais'}` : '';
+  const parteCentavos =
+    cents > 0 ? `${inteiroPorExtenso(cents)} ${cents === 1 ? 'centavo' : 'centavos'}` : '';
+
+  if (parteReais && parteCentavos) return `${parteReais} e ${parteCentavos}`;
+  if (parteReais) return parteReais;
+  if (parteCentavos) return parteCentavos;
+  return 'zero reais';
+}

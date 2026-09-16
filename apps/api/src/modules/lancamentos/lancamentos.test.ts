@@ -467,4 +467,72 @@ describe('lancamentos', () => {
     });
     expect(fimAntes.statusCode).toBe(400);
   });
+
+  describe('recibo em PDF', () => {
+    it('gera o PDF de uma receita recebida, com nome do cliente e valor por extenso', async () => {
+      const criado = await post({
+        tipo: 'receita',
+        data: '2026-09-05',
+        valor: 150_000,
+        descricao: 'Consultoria de setembro',
+        categoriaId: receita.id,
+        contatoId: clienteId,
+        status: 'pago',
+        formaPagamento: 'pix',
+      });
+      expect(criado.statusCode).toBe(201);
+      const id = criado.json<{ data: { id: string } }>().data.id;
+
+      const res = await injectComo(ctx.app, s, { method: 'GET', url: `${URL}/${id}/recibo` });
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['content-type']).toBe('application/pdf');
+      expect(res.headers['content-disposition']).toContain('recibo-');
+
+      const pdf = res.rawPayload;
+      expect(pdf.subarray(0, 4).toString()).toBe('%PDF');
+      expect(pdf.length).toBeGreaterThan(800);
+    });
+
+    it('recusa despesa (quem emite recibo de despesa é a outra parte)', async () => {
+      const criado = await post({
+        tipo: 'despesa',
+        data: '2026-09-05',
+        valor: 5_000,
+        descricao: 'Aluguel',
+        categoriaId: despesa.id,
+        status: 'pago',
+      });
+      const id = criado.json<{ data: { id: string } }>().data.id;
+      const res = await injectComo(ctx.app, s, { method: 'GET', url: `${URL}/${id}/recibo` });
+      expect(res.statusCode).toBe(422);
+      expect(res.json<{ error: { details: { campo: string }[] } }>().error.details[0]!.campo).toBe(
+        'tipo',
+      );
+    });
+
+    it('recusa receita ainda não recebida', async () => {
+      const criado = await post({
+        tipo: 'receita',
+        data: '2026-09-20',
+        valor: 20_000,
+        descricao: 'Serviço a receber',
+        categoriaId: receita.id,
+        status: 'pendente',
+      });
+      const id = criado.json<{ data: { id: string } }>().data.id;
+      const res = await injectComo(ctx.app, s, { method: 'GET', url: `${URL}/${id}/recibo` });
+      expect(res.statusCode).toBe(422);
+      expect(res.json<{ error: { details: { campo: string }[] } }>().error.details[0]!.campo).toBe(
+        'status',
+      );
+    });
+
+    it('lançamento inexistente → 404', async () => {
+      const res = await injectComo(ctx.app, s, {
+        method: 'GET',
+        url: `${URL}/00000000-0000-4000-8000-000000000000/recibo`,
+      });
+      expect(res.statusCode).toBe(404);
+    });
+  });
 });

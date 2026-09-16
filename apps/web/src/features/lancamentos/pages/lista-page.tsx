@@ -16,11 +16,13 @@ import {
   Paperclip,
   Pencil,
   Plus,
+  ReceiptText,
   Search,
   Trash2,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -48,6 +50,8 @@ import {
   useContasBancariasOpcoes,
   useContatosOpcoes,
 } from '@/features/referencias';
+import { baixarDaApi } from '@/lib/api/download';
+import { getErrorMessage } from '@/lib/api/errors';
 import { formatData, hojeSP, periodoPreset, presetDoPeriodo } from '@/lib/format/date';
 import { formatBRL, formatBRLComSinal } from '@/lib/format/money';
 import { useDebounce } from '@/lib/hooks/use-debounce';
@@ -196,6 +200,15 @@ export function LancamentosListaPage() {
     },
   ];
 
+  const baixarRecibo = async (l: LancamentoDto) => {
+    const nome = `recibo-${l.data}-${l.descricao.slice(0, 30)}.pdf`.replace(/[^\w.-]+/g, '-');
+    try {
+      await baixarDaApi(`/lancamentos/${l.id}/recibo`, nome);
+    } catch (erro) {
+      toast.error(getErrorMessage(erro));
+    }
+  };
+
   const acoes = (l: LancamentoDto) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -215,6 +228,13 @@ export function LancamentosListaPage() {
         <DropdownMenuItem onSelect={() => patch({ editar: l.id })}>
           <Pencil /> Editar
         </DropdownMenuItem>
+        {/* Recibo só faz sentido em receita já recebida: é a declaração de que o dinheiro
+            entrou. A API recusa o resto com 422, mas esconder o item evita o erro. */}
+        {l.tipo === 'receita' && l.status === 'pago' ? (
+          <DropdownMenuItem onSelect={() => void baixarRecibo(l)}>
+            <ReceiptText /> Emitir recibo
+          </DropdownMenuItem>
+        ) : null}
         {!exclusaoBloqueada(l) ? (
           <>
             <DropdownMenuSeparator />

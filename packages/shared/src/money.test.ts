@@ -16,6 +16,7 @@ import {
   reaisParaCentavos,
   somar,
   subtrair,
+  valorPorExtenso,
   variacaoPercentual,
 } from './money.js';
 
@@ -188,5 +189,52 @@ describe('quantidade em milésimos', () => {
     expect(parseQuantidade('')).toBeNull();
     expect(parseQuantidade('abc')).toBeNull();
     expect(parseQuantidade('-2')).toBeNull();
+  });
+});
+
+describe('valorPorExtenso (recibos)', () => {
+  // Tabela: cada linha é um caso onde o código ingênuo erra.
+  const casos: [number, string][] = [
+    [0, 'zero reais'],
+    [1, 'um centavo'],
+    [99, 'noventa e nove centavos'],
+    [100, 'um real'],
+    [200, 'dois reais'],
+    [123, 'um real e vinte e três centavos'],
+    // "cem" exato x "cento e ..." — o erro clássico.
+    [10_000, 'cem reais'],
+    [10_100, 'cento e um reais'],
+    [19_900, 'cento e noventa e nove reais'],
+    // "mil", não "um mil".
+    [100_000, 'mil reais'],
+    [100_100, 'mil e um reais'],
+    [150_000, 'mil e quinhentos reais'],
+    // Vírgula quando o último grupo não é "redondo"; "e" quando é.
+    [123_000, 'mil, duzentos e trinta reais'],
+    [200_000, 'dois mil reais'],
+    [210_000, 'dois mil e cem reais'],
+    [1_234_567, 'doze mil, trezentos e quarenta e cinco reais e sessenta e sete centavos'],
+    // Milhão: singular x plural, e a preposição "de" só quando termina na escala.
+    [100_000_000, 'um milhão de reais'],
+    [200_000_000, 'dois milhões de reais'],
+    [100_000_100, 'um milhão e um reais'],
+    [100_005_000, 'um milhão e cinquenta reais'],
+    // "mil" nunca leva "de".
+    [200_000, 'dois mil reais'],
+    // Grupos zerados no meio não podem virar escala solta: R$ 1.000.000.050,00.
+    [100_000_005_000, 'um bilhão e cinquenta reais'],
+    [100_000_000_000, 'um bilhão de reais'],
+  ];
+
+  it.each(casos)('%i centavos → "%s"', (centavos, esperado) => {
+    expect(valorPorExtenso(centavos)).toBe(esperado);
+  });
+
+  it('recusa valor negativo (não existe recibo de valor negativo)', () => {
+    expect(() => valorPorExtenso(-100)).toThrow(RangeError);
+  });
+
+  it('recusa valor não inteiro (centavos são inteiros)', () => {
+    expect(() => valorPorExtenso(10.5)).toThrow();
   });
 });
